@@ -3,7 +3,18 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      "inputs": ["src/**/*.ts", "tsconfig*.json", "package.json"]
+    },
+    "build:swc": {
+      "dependsOn": [],
+      "outputs": ["dist/**/*.js", "dist/**/*.js.map"],
+      "inputs": ["src/**/*.ts", "package.json"]
+    },
+    "build:types": {
+      "dependsOn": ["^build:types"],
+      "outputs": ["dist/**/*.d.ts", "dist/**/*.d.ts.map"],
+      "inputs": ["src/**/*.ts", "tsconfig*.json"]
     },
     "lint": {},
     "dev": {

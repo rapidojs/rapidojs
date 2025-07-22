@@ -23,7 +23,7 @@
   "scripts": {
     "build": "pnpm run clean && pnpm run build:swc && pnpm run build:types",
     "build:swc": "swc src -d dist --strip-leading-paths --source-maps --copy-files",
-    "build:types": "tsc --project tsconfig.build.json",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "clean": "rm -rf dist",
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "eslint ."
