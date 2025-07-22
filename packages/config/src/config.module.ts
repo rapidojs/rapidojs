@@ -1,0 +1,50 @@
+import 'reflect-metadata';
+import { Module, Type } from '@rapidojs/core';
+import { ConfigService } from './services/config.service.js';
+import { ConfigModuleOptions } from './types.js';
+import { CONFIG_SERVICE_TOKEN } from './constants.js';
+
+/**
+ * 配置模块
+ * 提供应用级别的配置管理功能
+ */
+@Module({
+  providers: [ConfigService],
+  exports: [ConfigService],
+})
+export class ConfigModule {
+  /**
+   * 创建根配置模块
+   * @param options 配置选项
+   * @returns 配置模块类型
+   */
+  static forRoot(options: ConfigModuleOptions = {}): Type<any> {
+    // 创建一个动态模块类
+    @Module({
+      providers: [ConfigService],
+      exports: [ConfigService],
+    })
+    class DynamicConfigModule {
+      static configService = new ConfigService(options);
+    }
+
+    return DynamicConfigModule;
+  }
+
+  /**
+   * 创建功能配置模块（用于特性模块中）
+   * @param options 配置选项
+   * @returns 配置模块类型
+   */
+  static forFeature(options: ConfigModuleOptions = {}): Type<any> {
+    @Module({
+      providers: [ConfigService],
+      exports: [ConfigService],
+    })
+    class FeatureConfigModule {
+      static configService = new ConfigService(options);
+    }
+
+    return FeatureConfigModule;
+  }
+} 

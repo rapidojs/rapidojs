@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapido.js 多模块 API 测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .module-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .module-title {
+            color: #3498db;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        .endpoint {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #27ae60;
+        }
+        .method {
+            font-weight: bold;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin-right: 10px;
+        }
+        .get { background: #27ae60; }
+        .post { background: #e74c3c; }
+        .put { background: #f39c12; }
+        .delete { background: #8e44ad; }
+        .url {
+            font-family: 'Monaco', 'Menlo', monospace;
+            color: #2c3e50;
+        }
+        .description {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .test-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #2980b9;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #27ae60;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            border-left-color: #e74c3c;
+            color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Rapido.js 多模块 API 测试</h1>
+        
+        <div class="module-section">
+            <div class="module-title">👤 用户模块 (UserModule)</div>
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/users</span>
+                <div class="description">获取所有用户列表</div>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/users/:id</span>
+                <div class="description">根据 ID 获取用户详情</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="url">/users</span>
+                <div class="description">创建新用户（需要 name 和 email）</div>
+            </div>
+            <div class="endpoint">
+                <span class="method put">PUT</span>
+                <span class="url">/users/:id</span>
+                <div class="description">更新用户信息</div>
+            </div>
+            <div class="endpoint">
+                <span class="method delete">DELETE</span>
+                <span class="url">/users/:id</span>
+                <div class="description">删除用户</div>
+            </div>
+        </div>
+
+        <div class="module-section">
+            <div class="module-title">📦 产品模块 (ProductModule)</div>
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/products</span>
+                <div class="description">获取所有产品（支持 category 和 inStock 查询参数）</div>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/products/in-stock</span>
+                <div class="description">获取所有有库存的产品</div>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/products/:id</span>
+                <div class="description">根据 ID 获取产品详情</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="url">/products</span>
+                <div class="description">创建新产品（需要 name, description, price, category, inStock）</div>
+            </div>
+            <div class="endpoint">
+                <span class="method put">PUT</span>
+                <span class="url">/products/:id</span>
+                <div class="description">更新产品信息</div>
+            </div>
+            <div class="endpoint">
+                <span class="method delete">DELETE</span>
+                <span class="url">/products/:id</span>
+                <div class="description">删除产品</div>
+            </div>
+        </div>
+
+        <div class="module-section">
+            <div class="module-title">🔐 认证模块 (AuthModule)</div>
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/auth/demo-users</span>
+                <div class="description">获取演示用户账号信息</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="url">/auth/login</span>
+                <div class="description">用户登录（需要 email 和 password）</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="url">/auth/refresh</span>
+                <div class="description">刷新令牌（需要 Authorization header）</div>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/auth/profile</span>
+                <div class="description">获取用户资料（需要 Authorization header）</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 快速测试</h3>
+            <button class="test-button" onclick="testAPI('/users')">获取用户列表</button>
+            <button class="test-button" onclick="testAPI('/users/1')">获取用户详情</button>
+            <button class="test-button" onclick="testAPI('/products')">获取产品列表</button>
+            <button class="test-button" onclick="testAPI('/products/1')">获取产品详情</button>
+            <button class="test-button" onclick="testAPI('/products?category=Electronics')">筛选电子产品</button>
+            <button class="test-button" onclick="testAPI('/products/in-stock')">有库存产品</button>
+            <button class="test-button" onclick="testAPI('/auth/demo-users')">演示账号</button>
+            <button class="test-button" onclick="testCreateUser()">创建用户</button>
+            <button class="test-button" onclick="testLogin()">用户登录</button>
+            
+            <div id="result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testAPI(endpoint, options = {}) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = `正在请求 ${endpoint}...`;
+
+            try {
+                const response = await fetch(endpoint, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.textContent = `状态: ${response.status} ${response.statusText}\n\n` +
+                                      `响应数据:\n${JSON.stringify(data, null, 2)}`;
+                
+                if (!response.ok) {
+                    resultDiv.classList.add('error');
+                }
+            } catch (error) {
+                resultDiv.classList.add('error');
+                resultDiv.textContent = `请求失败: ${error.message}`;
+            }
+        }
+
+        async function testCreateUser() {
+            const userData = {
+                name: "测试用户",
+                email: `test${Date.now()}@example.com`
+            };
+
+            await testAPI('/users', {
+                method: 'POST',
+                body: JSON.stringify(userData)
+            });
+        }
+
+        async function testLogin() {
+            const loginData = {
+                email: "admin@example.com",
+                password: "admin123"
+            };
+
+            await testAPI('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify(loginData)
+            });
+        }
+    </script>
+</body>
+</html>

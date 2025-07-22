@@ -1,0 +1,39 @@
+{
+  "name": "@rapidojs/common",
+  "version": "1.0.0",
+  "description": "Common utilities for Rapido.js framework",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rapidojs/rapidojs.git"
+  },
+  "homepage": "https://github.com/rapidojs/rapidojs#readme",
+  "bugs": {
+    "url": "https://github.com/rapidojs/rapidojs/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:swc && pnpm run build:types",
+    "build:swc": "swc src -d dist --strip-leading-paths --source-maps --copy-files",
+    "build:types": "tsc --project tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "rapidojs",
+    "common"
+  ],
+  "author": "RapidoJS Team",
+  "publishConfig": {
+    "access": "public"
+  }
+}

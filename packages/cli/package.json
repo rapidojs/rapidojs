@@ -1,0 +1,51 @@
+{
+  "name": "@rapidojs/cli",
+  "version": "1.0.0",
+  "description": "CLI for the Rapido.js framework.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rapidojs/rapidojs.git"
+  },
+  "homepage": "https://github.com/rapidojs/rapidojs#readme",
+  "bugs": {
+    "url": "https://github.com/rapidojs/rapidojs/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "rapido": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:swc && pnpm run build:types",
+    "build:swc": "swc src -d dist --strip-leading-paths --source-maps --copy-files",
+    "build:types": "tsc --project tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1",
+    "inquirer": "^12.0.0",
+    "fs-extra": "^11.2.0",
+    "mustache": "^4.2.0"
+  },
+  "devDependencies": {
+    "@rapidojs/common": "workspace:*",
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.7",
+    "@types/mustache": "^4.2.5"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
