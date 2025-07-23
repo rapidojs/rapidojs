@@ -78,7 +78,7 @@ export class NewCommand {
         dev: 'pnpm run build:swc --watch'
       },
       dependencies: {
-        '@rapidojs/core': '^0.2.0',
+        '@rapidojs/core': '^1.0.1',
         'class-transformer': '^0.5.1',
         'class-validator': '^0.14.1',
         'reflect-metadata': '^0.2.2'

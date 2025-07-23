@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Module, Type } from '@rapidojs/core';
+import { Module, Type, Provider } from '@rapidojs/core';
 import { ConfigService } from './services/config.service.js';
 import { ConfigModuleOptions } from './types.js';
 import { CONFIG_SERVICE_TOKEN } from './constants.js';
@@ -19,14 +19,17 @@ export class ConfigModule {
    * @returns 配置模块类型
    */
   static forRoot(options: ConfigModuleOptions = {}): Type<any> {
-    // 创建一个动态模块类
+    const configService = new ConfigService(options);
+    const configProvider: Provider = {
+      provide: ConfigService,
+      useValue: configService,
+    };
+
     @Module({
-      providers: [ConfigService],
+      providers: [configProvider],
       exports: [ConfigService],
     })
-    class DynamicConfigModule {
-      static configService = new ConfigService(options);
-    }
+    class DynamicConfigModule {}
 
     return DynamicConfigModule;
   }
@@ -37,13 +40,17 @@ export class ConfigModule {
    * @returns 配置模块类型
    */
   static forFeature(options: ConfigModuleOptions = {}): Type<any> {
+    const configService = new ConfigService(options);
+    const configProvider: Provider = {
+      provide: ConfigService,
+      useValue: configService,
+    };
+
     @Module({
-      providers: [ConfigService],
+      providers: [configProvider],
       exports: [ConfigService],
     })
-    class FeatureConfigModule {
-      static configService = new ConfigService(options);
-    }
+    class FeatureConfigModule {}
 
     return FeatureConfigModule;
   }

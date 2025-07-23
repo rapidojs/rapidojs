@@ -117,15 +117,25 @@ export class ConfigService implements IConfigService {
    * 加载 YAML 配置文件
    */
   private loadConfigFiles(): void {
-    if (!this.options.configFilePath) {
+    const rapidoConfigPath = process.env.RAPIDO_CONFIG_PATH;
+
+    let configPaths: string[] = [];
+
+    if (rapidoConfigPath) {
+      configPaths = [rapidoConfigPath];
+    } else if (this.options.configFilePath) {
+      configPaths = Array.isArray(this.options.configFilePath) 
+        ? this.options.configFilePath 
+        : [this.options.configFilePath];
+    } else {
       return;
     }
 
-    const configPaths = Array.isArray(this.options.configFilePath) 
-      ? this.options.configFilePath 
-      : [this.options.configFilePath];
+    const absoluteConfigPaths = configPaths.map(p =>
+      path.isAbsolute(p) ? p : path.resolve(process.cwd(), p),
+    );
 
-    for (const configPath of configPaths) {
+    for (const configPath of absoluteConfigPaths) {
       if (fs.existsSync(configPath)) {
         try {
           const fileContent = fs.readFileSync(configPath, 'utf8');
@@ -142,7 +152,6 @@ export class ConfigService implements IConfigService {
             // 默认尝试 YAML 解析
             parsedConfig = yaml.load(fileContent);
           }
-
           if (parsedConfig && typeof parsedConfig === 'object') {
             this.configData = this.mergeDeep(this.configData, parsedConfig);
           }

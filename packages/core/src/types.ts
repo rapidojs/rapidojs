@@ -71,11 +71,16 @@ export interface ModuleMetadata {
   /**
    * 模块中提供的服务
    */
-  providers?: Type<any>[];
+  providers?: Provider[];
   
   /**
    * 模块导出的服务，可以被其他模块使用
    */
-  exports?: Type<any>[];
+  exports?: Provider[];
 }
+
+export type Provider = Type<any> | {
+  provide: any;
+  useValue: any;
+};
 

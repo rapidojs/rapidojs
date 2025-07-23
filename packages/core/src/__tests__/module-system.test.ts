@@ -57,4 +57,43 @@ describe('Module System (E2E)', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body).toBe('Hello from TestService!');
   });
+
+  it('should correctly handle value providers (useValue)', async () => {
+    const ApiKeyProvider = {
+      provide: 'API_KEY',
+      useValue: 'my-secret-api-key',
+    };
+
+    @Injectable()
+    class ApiService {
+      constructor(@Inject('API_KEY') public readonly apiKey: string) {}
+    }
+
+    @Controller('/api')
+    class ApiController {
+      constructor(private readonly apiService: ApiService) {}
+      @Get('/key')
+      getKey() {
+        return this.apiService.apiKey;
+      }
+    }
+
+    @Module({
+      controllers: [ApiController],
+      providers: [ApiService, ApiKeyProvider],
+    })
+    class ApiModule {}
+
+    const valueProviderApp = await RapidoFactory.create(ApiModule);
+
+    const response = await valueProviderApp.inject({
+      method: 'GET',
+      url: '/api/key',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toBe('my-secret-api-key');
+
+    await valueProviderApp.close();
+  });
 });

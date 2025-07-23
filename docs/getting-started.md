@@ -239,158 +239,60 @@ export class CreateUserDto {
 }
 ```
 
-## 运行应用
+### 5. 获取服务实例 (高级)
 
-### 开发模式
+在某些情况下，你可能需要在应用引导阶段（例如 `main.ts` 中）获取一个已经注册的服务实例。`RapidoFactory.create` 返回的应用实例上附加了一个 `container` 属性，你可以通过它来解析（resolve）任何已注册的提供者。
 
-```bash
-pnpm dev
-```
+下面是一个完整的示例，演示了如何配置 `ConfigModule`，然后在 `main.ts` 中获取 `ConfigService` 来读取端口号。
 
-### 生产构建
+**1. 在 AppModule 中配置 ConfigModule**
 
-```bash
-pnpm build
-pnpm start
-```
-
-## 测试 API
-
-应用启动后，你可以测试以下端点：
-
-### 1. Hello World
-
-```bash
-curl http://localhost:3000/api/hello
-```
-
-响应：
-```json
-"Hello, Rapido.js!"
-```
-
-### 2. 获取用户
-
-```bash
-curl http://localhost:3000/api/users/123?include=profile
-```
-
-响应：
-```json
-{
-  "id": 123,
-  "name": "User 123",
-  "email": "user123@example.com",
-  "include": "profile"
-}
-```
-
-### 3. 创建用户
-
-```bash
-curl -X POST http://localhost:3000/api/users \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "email": "john@example.com",
-    "age": 30
-  }'
-```
-
-响应：
-```json
-{
-  "id": 456,
-  "name": "John Doe",
-  "email": "john@example.com",
-  "age": 30,
-  "createdAt": "2024-01-01T12:00:00.000Z"
-}
-```
-
-## 项目结构
-
-```
-my-rapido-app/
-├── src/
-│   ├── dto/
-│   │   └── create-user.dto.ts
-│   ├── app.controller.ts
-│   ├── app.service.ts
-│   ├── app.module.ts
-│   └── main.ts
-├── dist/                    # 构建输出
-├── node_modules/
-├── package.json
-└── tsconfig.json
-```
-
-## 添加配置管理
-
-为了让应用更灵活，你可以添加配置管理：
-
-### 1. 安装配置包
-
-```bash
-pnpm add @rapidojs/config
-```
-
-### 2. 创建配置文件
-
-创建 `.env` 文件：
-```env
-APP_NAME=My Rapido App
-APP_PORT=3000
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-```
-
-### 3. 注册配置模块
-
-在 `app.module.ts` 中：
+首先，确保你的根模块（如 `app.module.ts`）导入并配置了 `ConfigModule`。
 
 ```typescript
+// src/app.module.ts
 import { Module } from '@rapidojs/core';
 import { ConfigModule } from '@rapidojs/config';
 import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 
 @Module({
   imports: [
+    // 使用 forRoot 配置模块，这会提供一个配置好的 ConfigService
     ConfigModule.forRoot({
-      envFilePath: '.env',
+      envFilePath: '.env', // 假设你有一个 .env 文件
     }),
   ],
   controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
 ```
 
-### 4. 使用配置
+**2. 在 main.ts 中解析并使用服务**
 
-在服务中使用配置：
+现在，你可以在 `main.ts` 中安全地解析 `ConfigService` 了。
 
 ```typescript
-import { Injectable } from '@rapidojs/core';
+// src/main.ts
+import 'reflect-metadata';
+import { RapidoFactory } from '@rapidojs/core';
+import { AppModule } from './app.module.js';
 import { ConfigService } from '@rapidojs/config';
 
-@Injectable()
-export class AppService {
-  constructor(private readonly configService: ConfigService) {}
-
-  getAppInfo() {
-    return {
-      name: this.configService.get('APP_NAME', 'Default App'),
-      port: this.configService.get('APP_PORT', 3000),
-      database: {
-        host: this.configService.get('DATABASE_HOST', 'localhost'),
-        port: this.configService.get('DATABASE_PORT', 5432),
-      },
-    };
-  }
+async function bootstrap() {
+  const app = await RapidoFactory.create(AppModule);
+  
+  // 从容器中解析 ConfigService
+  const configService = await app.container.resolve(ConfigService);
+  const port = configService.get<number>('APP_PORT', 3000);
+  
+  await app.listen({ port, host: '0.0.0.0' });
+  console.log(`🚀 Server listening on http://localhost:${port}`);
 }
+
+bootstrap();
 ```
+
+> **注意**: 这是一种高级用法，通常只在引导应用或编写测试时需要。在大多数业务逻辑中，你应该使用构造函数注入来获取服务。
 
 ## 下一步
 

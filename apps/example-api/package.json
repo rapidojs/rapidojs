@@ -20,6 +20,7 @@
     "@rapidojs/core": "workspace:*",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "minimist": "^1.2.8",
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {

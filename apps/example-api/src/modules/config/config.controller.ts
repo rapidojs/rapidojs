@@ -1,14 +1,10 @@
 import 'reflect-metadata';
 import { Controller, Get, Param } from '@rapidojs/core';
 import { ConfigService } from '@rapidojs/config';
-import { AppConfig, DatabaseConfig } from '../../config/app.config.js';
-
 @Controller('/api/config')
 export class ConfigController {
   constructor(
     private readonly configService: ConfigService,
-    private readonly appConfig: AppConfig,
-    private readonly databaseConfig: DatabaseConfig,
   ) {}
 
   /**
@@ -18,7 +14,7 @@ export class ConfigController {
   getAppConfig() {
     return {
       success: true,
-      data: this.appConfig.getAppInfo(),
+      data: this.configService.get('app.name'),
     };
   }
 
@@ -29,7 +25,7 @@ export class ConfigController {
   getDatabaseConfig() {
     return {
       success: true,
-      data: this.databaseConfig.getConnectionInfo(),
+      data: this.configService.get('database.host'),
     };
   }
 

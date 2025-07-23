@@ -35,13 +35,19 @@ export class DIContainer {
 
     if (metadata.providers) {
       for (const provider of metadata.providers) {
-        this.providerRegistry.set(provider, actualModule);
-
-        const filterMetadata = Reflect.getMetadata(EXCEPTION_FILTER_METADATA, provider);
-        if (filterMetadata && Array.isArray(filterMetadata)) {
-          for (const exceptionType of filterMetadata) {
-            this.exceptionFilters.set(exceptionType, provider as Type<ExceptionFilter>);
+        if (typeof provider === 'function') {
+          // It's a class provider
+          this.providerRegistry.set(provider, actualModule);
+          const filterMetadata = Reflect.getMetadata(EXCEPTION_FILTER_METADATA, provider);
+          if (filterMetadata && Array.isArray(filterMetadata)) {
+            for (const exceptionType of filterMetadata) {
+              this.exceptionFilters.set(exceptionType, provider as Type<ExceptionFilter>);
+            }
           }
+        } else {
+          // It's a value provider
+          const { provide, useValue } = provider;
+          this.instances.set(provide, useValue);
         }
       }
     }

@@ -3,7 +3,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ConfigService } from '../services/config.service.js';
-import { ConfigModuleOptions } from '../interfaces/config.interface.js';
+import { ConfigModule } from '../config.module.js';
+import { Module } from '@rapidojs/core';
+import { RapidoFactory } from '@rapidojs/core';
+import { ConfigModuleOptions } from '../types.js';
 
 describe('ConfigService', () => {
   let configService: ConfigService;
@@ -224,6 +227,64 @@ app:
           throwOnMissingFile: false,
         });
       }).toThrow('解析配置文件失败');
+    });
+  });
+
+  describe('E2E a nivel de módulo', () => {
+    it('debería proporcionar un ConfigService configurado a través de forRoot', async () => {
+      const yamlContent = `
+app:
+  name: E2E-Test-App
+  port: 9999
+      `;
+      fs.writeFileSync(yamlFile, yamlContent);
+
+      @Module({
+        imports: [
+          ConfigModule.forRoot({
+            configFilePath: yamlFile,
+            ignoreEnvFile: true
+          })
+        ]
+      })
+      class TestAppModule {}
+
+      const app = await RapidoFactory.create(TestAppModule);
+      const configService = await app.container.resolve(ConfigService);
+
+      expect(configService.get('app.name')).toBe('E2E-Test-App');
+      expect(configService.get('app.port')).toBe(9999);
+    });
+  });
+
+  describe('RAPIDO_CONFIG_PATH 环境变量', () => {
+    let originalEnv: NodeJS.ProcessEnv;
+
+    beforeEach(() => {
+      originalEnv = { ...process.env };
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('debería cargar la configuración desde la ruta especificada en RAPIDO_CONFIG_PATH', () => {
+      const envConfigContent = `
+server:
+  host: env-host
+      `;
+      const envConfigFile = path.join(tempDir, 'env-config.yaml');
+      fs.writeFileSync(envConfigFile, envConfigContent);
+
+      process.env.RAPIDO_CONFIG_PATH = envConfigFile;
+
+      const configService = new ConfigService({
+        // Opciones que deberían ser ignoradas
+        configFilePath: 'non-existent-file.yaml',
+        ignoreEnvFile: true
+      });
+
+      expect(configService.get('server.host')).toBe('env-host');
     });
   });
 }); 

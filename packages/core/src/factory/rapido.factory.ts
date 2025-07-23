@@ -18,10 +18,15 @@ export class RapidoFactory {
    * @param config - Optional application configuration.
    * @returns A promise that resolves to the configured Fastify instance.
    */
-    public static async create(rootModule: Type<any>, config?: AppConfig): Promise<FastifyInstance & { addStaticFiles: (config: StaticFileConfig) => Promise<void> }> {
+    public static async create(rootModule: Type<any>, config?: AppConfig): Promise<FastifyInstance & { 
+      addStaticFiles: (config: StaticFileConfig) => Promise<void>;
+      container: DIContainer;
+    }> {
     const app = fastify(config?.fastifyOptions) as unknown as FastifyInstance;
 
-        app.setErrorHandler(async (error: Error, request: FastifyRequest, reply: FastifyReply) => {
+    const container = new DIContainer();
+
+    app.setErrorHandler(async (error: Error, request: FastifyRequest, reply: FastifyReply) => {
       const filter = container.findFilter(error);
       if (filter) {
         const instance = await container.resolve(filter);
@@ -82,7 +87,6 @@ export class RapidoFactory {
       await registerStaticConfig(config);
     };
 
-    const container = new DIContainer();
     await container.registerModule(rootModule);
 
     const controllers = container.getControllers(rootModule);
@@ -90,6 +94,12 @@ export class RapidoFactory {
     const registrar = new ControllerRegistrar(app, container);
     await registrar.register(controllers);
 
-    return app as FastifyInstance & { addStaticFiles: (config: StaticFileConfig) => Promise<void> };
+    // Attach the container to the app instance
+    (app as any).container = container;
+
+    return app as FastifyInstance & { 
+      addStaticFiles: (config: StaticFileConfig) => Promise<void>;
+      container: DIContainer;
+    };
   }
 }
