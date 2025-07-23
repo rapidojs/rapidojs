@@ -1,0 +1,674 @@
+---
+globs: *.test.ts,*.spec.ts
+alwaysApply: false
+---
+# 测试约定和最佳实践
+
+## 测试文件组织
+
+### 文件命名规范
+
+- 单元测试：`{feature}.test.ts`
+- 集成测试：`{feature}.integration.test.ts`
+- 端到端测试：`{feature}.e2e.test.ts`
+
+```typescript
+// ✅ 正确的测试文件命名
+user.service.test.ts
+user.controller.test.ts
+user.integration.test.ts
+auth.e2e.test.ts
+```
+
+### 测试目录结构
+
+```
+src/
+├── __tests__/           # 单元测试
+│   ├── services/
+│   ├── controllers/
+│   └── utils/
+├── test/               # 集成和 E2E 测试
+│   ├── integration/
+│   └── e2e/
+└── features/
+    └── user/
+        └── __tests__/  # 功能特定测试
+```
+
+## 测试框架配置
+
+使用 Vitest 作为测试框架：
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+    setupFiles: ['./test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: ['node_modules/', 'test/', '**/*.spec.ts'],
+    },
+  },
+});
+```
+
+## 测试结构模式
+
+### AAA 模式（Arrange-Act-Assert）
+
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest';
+
+describe('UsersService', () => {
+  let service: UsersService;
+  
+  beforeEach(() => {
+    // Arrange - 设置测试环境
+    service = new UsersService();
+  });
+
+  it('should create a user when valid data is provided', () => {
+    // Arrange - 准备测试数据
+    const createUserDto = {
+      name: 'John Doe',
+      email: 'john@example.com'
+    };
+
+    // Act - 执行被测试的行为
+    const result = service.create(createUserDto);
+
+    // Assert - 验证结果
+    expect(result).toBeDefined();
+    expect(result.name).toBe('John Doe');
+    expect(result.id).toBeTypeOf('number');
+  });
+});
+```
+
+## 测试命名约定
+
+### 描述性测试名称
+
+使用完整的句子描述测试场景：
+
+```typescript
+// ✅ 正确 - 描述性测试名称
+describe('UsersService', () => {
+  describe('findById', () => {
+    it('should return user when valid id is provided', () => {});
+    it('should throw NotFoundException when user does not exist', () => {});
+    it('should throw BadRequestException when id is negative', () => {});
+  });
+});
+
+// ❌ 避免 - 模糊的测试名称
+describe('UsersService', () => {
+  it('test1', () => {});
+  it('works', () => {});
+  it('returns data', () => {});
+});
+```
+
+### 分组相关测试
+
+使用 `describe` 块组织相关测试：
+
+```typescript
+describe('UsersController', () => {
+  describe('GET /users', () => {
+    it('should return all users', () => {});
+    it('should support pagination', () => {});
+    it('should support filtering', () => {});
+  });
+
+  describe('POST /users', () => {
+    it('should create user with valid data', () => {});
+    it('should validate required fields', () => {});
+    it('should reject duplicate email', () => {});
+  });
+});
+```
+
+## Mock 和 Stub 规范
+
+### 使用 vi.mock 进行模块模拟
+
+```typescript
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { UsersController } from './users.controller.js';
+import { UsersService } from './users.service.js';
+
+// Mock 整个服务模块
+vi.mock('./users.service.js', () => ({
+  UsersService: vi.fn().mockImplementation(() => ({
+    findAll: vi.fn(),
+    findById: vi.fn(),
+    create: vi.fn(),
+  })),
+}));
+
+describe('UsersController', () => {
+  let controller: UsersController;
+  let mockUsersService: any;
+
+  beforeEach(() => {
+    mockUsersService = new UsersService();
+    controller = new UsersController(mockUsersService);
+  });
+
+  it('should return users from service', () => {
+    // Arrange
+    const mockUsers = [{ id: 1, name: 'John' }];
+    mockUsersService.findAll.mockReturnValue(mockUsers);
+
+    // Act
+    const result = controller.findAll();
+
+    // Assert
+    expect(mockUsersService.findAll).toHaveBeenCalled();
+    expect(result).toEqual(mockUsers);
+  });
+});
+```
+
+### 依赖注入测试
+
+```typescript
+import { Test, TestingModule } from '@rapidojs/testing';
+
+describe('UsersService Integration', () => {
+  let service: UsersService;
+  let module: TestingModule;
+
+  beforeEach(async () => {
+    module = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        {
+          provide: UsersRepository,
+          useValue: {
+            find: vi.fn(),
+            save: vi.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<UsersService>(UsersService);
+  });
+
+  afterEach(async () => {
+    await module.close();
+  });
+});
+```
+
+## 异步测试
+
+### Promise 测试
+
+```typescript
+it('should handle async operations', async () => {
+  // Arrange
+  const userId = 1;
+
+  // Act
+  const result = await service.findById(userId);
+
+  // Assert
+  expect(result).toBeDefined();
+});
+```
+
+### 异常测试
+
+```typescript
+it('should throw error for invalid input', async () => {
+  // Arrange
+  const invalidId = -1;
+
+  // Act & Assert
+  await expect(service.findById(invalidId))
+    .rejects
+    .toThrow('Invalid user ID');
+});
+```
+
+## 测试数据管理
+
+### 测试固件（Fixtures）
+
+```typescript
+// test/fixtures/user.fixture.ts
+export const createUserFixture = (overrides = {}) => ({
+  id: 1,
+  name: 'John Doe',
+  email: 'john@example.com',
+  createdAt: new Date(),
+  ...overrides,
+});
+
+// 在测试中使用
+it('should process user data', () => {
+  const user = createUserFixture({ name: 'Jane Doe' });
+  const result = service.processUser(user);
+  expect(result.name).toBe('Jane Doe');
+});
+```
+
+### 数据构建器模式
+
+```typescript
+class UserBuilder {
+  private user = {
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com',
+  };
+
+  withName(name: string) {
+    this.user.name = name;
+    return this;
+  }
+
+  withEmail(email: string) {
+    this.user.email = email;
+    return this;
+  }
+
+  build() {
+    return { ...this.user };
+  }
+}
+
+// 使用构建器
+it('should handle different user types', () => {
+  const adminUser = new UserBuilder()
+    .withName('Admin')
+    .withEmail('admin@example.com')
+    .build();
+    
+  expect(service.isAdmin(adminUser)).toBe(true);
+});
+```
+
+## 覆盖率要求
+
+- **单元测试覆盖率**: 最低 80%
+- **集成测试覆盖率**: 最低 70%
+- **关键路径覆盖率**: 100%
+
+```typescript
+// 确保测试覆盖所有分支
+it('should handle all user states', () => {
+  // 测试活跃用户
+  expect(service.isActive(activeUser)).toBe(true);
+  
+  // 测试非活跃用户
+  expect(service.isActive(inactiveUser)).toBe(false);
+  
+  // 测试已删除用户
+  expect(service.isActive(deletedUser)).toBe(false);
+});
+```
+
+## 性能测试
+
+```typescript
+it('should process large datasets efficiently', async () => {
+  // Arrange
+  const largeDataset = Array.from({ length: 10000 }, (_, i) => 
+    createUserFixture({ id: i })
+  );
+
+  // Act
+  const startTime = Date.now();
+  const result = await service.processBatch(largeDataset);
+  const duration = Date.now() - startTime;
+
+  // Assert
+  expect(result).toHaveLength(largeDataset.length);
+  expect(duration).toBeLessThan(1000); // 应在 1 秒内完成
+});
+```
+# 测试约定和最佳实践
+
+## 测试文件组织
+
+### 文件命名规范
+
+- 单元测试：`{feature}.test.ts`
+- 集成测试：`{feature}.integration.test.ts`
+- 端到端测试：`{feature}.e2e.test.ts`
+
+```typescript
+// ✅ 正确的测试文件命名
+user.service.test.ts
+user.controller.test.ts
+user.integration.test.ts
+auth.e2e.test.ts
+```
+
+### 测试目录结构
+
+```
+src/
+├── __tests__/           # 单元测试
+│   ├── services/
+│   ├── controllers/
+│   └── utils/
+├── test/               # 集成和 E2E 测试
+│   ├── integration/
+│   └── e2e/
+└── features/
+    └── user/
+        └── __tests__/  # 功能特定测试
+```
+
+## 测试框架配置
+
+使用 Vitest 作为测试框架：
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+    setupFiles: ['./test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: ['node_modules/', 'test/', '**/*.spec.ts'],
+    },
+  },
+});
+```
+
+## 测试结构模式
+
+### AAA 模式（Arrange-Act-Assert）
+
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest';
+
+describe('UsersService', () => {
+  let service: UsersService;
+  
+  beforeEach(() => {
+    // Arrange - 设置测试环境
+    service = new UsersService();
+  });
+
+  it('should create a user when valid data is provided', () => {
+    // Arrange - 准备测试数据
+    const createUserDto = {
+      name: 'John Doe',
+      email: 'john@example.com'
+    };
+
+    // Act - 执行被测试的行为
+    const result = service.create(createUserDto);
+
+    // Assert - 验证结果
+    expect(result).toBeDefined();
+    expect(result.name).toBe('John Doe');
+    expect(result.id).toBeTypeOf('number');
+  });
+});
+```
+
+## 测试命名约定
+
+### 描述性测试名称
+
+使用完整的句子描述测试场景：
+
+```typescript
+// ✅ 正确 - 描述性测试名称
+describe('UsersService', () => {
+  describe('findById', () => {
+    it('should return user when valid id is provided', () => {});
+    it('should throw NotFoundException when user does not exist', () => {});
+    it('should throw BadRequestException when id is negative', () => {});
+  });
+});
+
+// ❌ 避免 - 模糊的测试名称
+describe('UsersService', () => {
+  it('test1', () => {});
+  it('works', () => {});
+  it('returns data', () => {});
+});
+```
+
+### 分组相关测试
+
+使用 `describe` 块组织相关测试：
+
+```typescript
+describe('UsersController', () => {
+  describe('GET /users', () => {
+    it('should return all users', () => {});
+    it('should support pagination', () => {});
+    it('should support filtering', () => {});
+  });
+
+  describe('POST /users', () => {
+    it('should create user with valid data', () => {});
+    it('should validate required fields', () => {});
+    it('should reject duplicate email', () => {});
+  });
+});
+```
+
+## Mock 和 Stub 规范
+
+### 使用 vi.mock 进行模块模拟
+
+```typescript
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { UsersController } from './users.controller.js';
+import { UsersService } from './users.service.js';
+
+// Mock 整个服务模块
+vi.mock('./users.service.js', () => ({
+  UsersService: vi.fn().mockImplementation(() => ({
+    findAll: vi.fn(),
+    findById: vi.fn(),
+    create: vi.fn(),
+  })),
+}));
+
+describe('UsersController', () => {
+  let controller: UsersController;
+  let mockUsersService: any;
+
+  beforeEach(() => {
+    mockUsersService = new UsersService();
+    controller = new UsersController(mockUsersService);
+  });
+
+  it('should return users from service', () => {
+    // Arrange
+    const mockUsers = [{ id: 1, name: 'John' }];
+    mockUsersService.findAll.mockReturnValue(mockUsers);
+
+    // Act
+    const result = controller.findAll();
+
+    // Assert
+    expect(mockUsersService.findAll).toHaveBeenCalled();
+    expect(result).toEqual(mockUsers);
+  });
+});
+```
+
+### 依赖注入测试
+
+```typescript
+import { Test, TestingModule } from '@rapidojs/testing';
+
+describe('UsersService Integration', () => {
+  let service: UsersService;
+  let module: TestingModule;
+
+  beforeEach(async () => {
+    module = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        {
+          provide: UsersRepository,
+          useValue: {
+            find: vi.fn(),
+            save: vi.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<UsersService>(UsersService);
+  });
+
+  afterEach(async () => {
+    await module.close();
+  });
+});
+```
+
+## 异步测试
+
+### Promise 测试
+
+```typescript
+it('should handle async operations', async () => {
+  // Arrange
+  const userId = 1;
+
+  // Act
+  const result = await service.findById(userId);
+
+  // Assert
+  expect(result).toBeDefined();
+});
+```
+
+### 异常测试
+
+```typescript
+it('should throw error for invalid input', async () => {
+  // Arrange
+  const invalidId = -1;
+
+  // Act & Assert
+  await expect(service.findById(invalidId))
+    .rejects
+    .toThrow('Invalid user ID');
+});
+```
+
+## 测试数据管理
+
+### 测试固件（Fixtures）
+
+```typescript
+// test/fixtures/user.fixture.ts
+export const createUserFixture = (overrides = {}) => ({
+  id: 1,
+  name: 'John Doe',
+  email: 'john@example.com',
+  createdAt: new Date(),
+  ...overrides,
+});
+
+// 在测试中使用
+it('should process user data', () => {
+  const user = createUserFixture({ name: 'Jane Doe' });
+  const result = service.processUser(user);
+  expect(result.name).toBe('Jane Doe');
+});
+```
+
+### 数据构建器模式
+
+```typescript
+class UserBuilder {
+  private user = {
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com',
+  };
+
+  withName(name: string) {
+    this.user.name = name;
+    return this;
+  }
+
+  withEmail(email: string) {
+    this.user.email = email;
+    return this;
+  }
+
+  build() {
+    return { ...this.user };
+  }
+}
+
+// 使用构建器
+it('should handle different user types', () => {
+  const adminUser = new UserBuilder()
+    .withName('Admin')
+    .withEmail('admin@example.com')
+    .build();
+    
+  expect(service.isAdmin(adminUser)).toBe(true);
+});
+```
+
+## 覆盖率要求
+
+- **单元测试覆盖率**: 最低 80%
+- **集成测试覆盖率**: 最低 70%
+- **关键路径覆盖率**: 100%
+
+```typescript
+// 确保测试覆盖所有分支
+it('should handle all user states', () => {
+  // 测试活跃用户
+  expect(service.isActive(activeUser)).toBe(true);
+  
+  // 测试非活跃用户
+  expect(service.isActive(inactiveUser)).toBe(false);
+  
+  // 测试已删除用户
+  expect(service.isActive(deletedUser)).toBe(false);
+});
+```
+
+## 性能测试
+
+```typescript
+it('should process large datasets efficiently', async () => {
+  // Arrange
+  const largeDataset = Array.from({ length: 10000 }, (_, i) => 
+    createUserFixture({ id: i })
+  );
+
+  // Act
+  const startTime = Date.now();
+  const result = await service.processBatch(largeDataset);
+  const duration = Date.now() - startTime;
+
+  // Assert
+  expect(result).toHaveLength(largeDataset.length);
+  expect(duration).toBeLessThan(1000); // 应在 1 秒内完成
+});
+```

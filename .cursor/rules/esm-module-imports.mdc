@@ -1,0 +1,310 @@
+---
+globs: *.ts,*.js,*.mts,*.mjs
+alwaysApply: false
+---
+# ESM 模块导入规范
+
+## 文件扩展名要求
+
+RapidoJS 项目使用 ESM 模块，所有导入语句必须包含 `.js` 扩展名（即使源文件是 `.ts`）：
+
+```typescript
+// ✅ 正确 - 包含 .js 扩展名
+import { UserService } from './user.service.js';
+import { CreateUserDto } from './dto/create-user.dto.js';
+import { AppModule } from './app.module.js';
+
+// ❌ 错误 - 缺少扩展名
+import { UserService } from './user.service';
+import { CreateUserDto } from './dto/create-user.dto';
+```
+
+## 相对路径导入
+
+使用相对路径导入本地模块时必须包含扩展名：
+
+```typescript
+// ✅ 正确
+import { UsersController } from './users.controller.js';
+import { UsersService } from './users.service.js';
+import { CreateUserDto } from './dto/create-user.dto.js';
+import { AppModule } from '../app.module.js';
+
+// ❌ 错误
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+```
+
+## npm 包导入
+
+npm 包导入不需要扩展名：
+
+```typescript
+// ✅ 正确 - npm 包导入
+import { Controller, Get, Post } from '@rapidojs/core';
+import { IsEmail, IsNotEmpty } from 'class-validator';
+import { Injectable } from '@rapidojs/core';
+
+// ✅ 正确 - Node.js 内置模块
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+```
+
+## 工作空间包导入
+
+引用工作空间内的其他包时不需要扩展名：
+
+```typescript
+// ✅ 正确 - 工作空间包
+import { ConfigService } from '@rapidojs/config';
+import { HttpStatus } from '@rapidojs/common';
+import { Test } from '@rapidojs/testing';
+```
+
+## 导入顺序
+
+按以下顺序组织导入语句：
+
+```typescript
+// 1. reflect-metadata (必须在最前面)
+import 'reflect-metadata';
+
+// 2. Node.js 内置模块
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+// 3. 第三方 npm 包
+import { IsEmail, IsNotEmpty } from 'class-validator';
+
+// 4. RapidoJS 工作空间包
+import { Controller, Get, Post } from '@rapidojs/core';
+import { ConfigService } from '@rapidojs/config';
+
+// 5. 相对路径导入（按层级排序）
+import { AppModule } from './app.module.js';
+import { UsersService } from './users.service.js';
+import { CreateUserDto } from './dto/create-user.dto.js';
+```
+
+## package.json 配置
+
+确保包的 package.json 正确配置 ESM：
+
+```json
+{
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  }
+}
+```
+
+## TypeScript 配置
+
+tsconfig.json 应配置适当的模块设置：
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  }
+}
+```
+
+## 常见错误避免
+
+### 错误的导入方式
+
+```typescript
+// ❌ 错误 - 缺少 .js 扩展名
+import { UserService } from './user.service';
+
+// ❌ 错误 - 使用 .ts 扩展名
+import { UserService } from './user.service.ts';
+
+// ❌ 错误 - 默认导入 CommonJS 模块
+import UserService from './user.service.js';
+```
+
+### 正确的导入方式
+
+```typescript
+// ✅ 正确 - 命名导入 with .js 扩展名
+import { UserService } from './user.service.js';
+
+// ✅ 正确 - 多个命名导入
+import { UserService, UserRepository } from './user.service.js';
+
+// ✅ 正确 - 默认导入（当模块有默认导出时）
+import UserService from './user.service.js';
+```
+
+## 动态导入
+
+使用动态导入时也要包含扩展名：
+
+```typescript
+// ✅ 正确
+const module = await import('./dynamic-module.js');
+
+// ❌ 错误
+const module = await import('./dynamic-module');
+```
+# ESM 模块导入规范
+
+## 文件扩展名要求
+
+RapidoJS 项目使用 ESM 模块，所有导入语句必须包含 `.js` 扩展名（即使源文件是 `.ts`）：
+
+```typescript
+// ✅ 正确 - 包含 .js 扩展名
+import { UserService } from './user.service.js';
+import { CreateUserDto } from './dto/create-user.dto.js';
+import { AppModule } from './app.module.js';
+
+// ❌ 错误 - 缺少扩展名
+import { UserService } from './user.service';
+import { CreateUserDto } from './dto/create-user.dto';
+```
+
+## 相对路径导入
+
+使用相对路径导入本地模块时必须包含扩展名：
+
+```typescript
+// ✅ 正确
+import { UsersController } from './users.controller.js';
+import { UsersService } from './users.service.js';
+import { CreateUserDto } from './dto/create-user.dto.js';
+import { AppModule } from '../app.module.js';
+
+// ❌ 错误
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+```
+
+## npm 包导入
+
+npm 包导入不需要扩展名：
+
+```typescript
+// ✅ 正确 - npm 包导入
+import { Controller, Get, Post } from '@rapidojs/core';
+import { IsEmail, IsNotEmpty } from 'class-validator';
+import { Injectable } from '@rapidojs/core';
+
+// ✅ 正确 - Node.js 内置模块
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+```
+
+## 工作空间包导入
+
+引用工作空间内的其他包时不需要扩展名：
+
+```typescript
+// ✅ 正确 - 工作空间包
+import { ConfigService } from '@rapidojs/config';
+import { HttpStatus } from '@rapidojs/common';
+import { Test } from '@rapidojs/testing';
+```
+
+## 导入顺序
+
+按以下顺序组织导入语句：
+
+```typescript
+// 1. reflect-metadata (必须在最前面)
+import 'reflect-metadata';
+
+// 2. Node.js 内置模块
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+// 3. 第三方 npm 包
+import { IsEmail, IsNotEmpty } from 'class-validator';
+
+// 4. RapidoJS 工作空间包
+import { Controller, Get, Post } from '@rapidojs/core';
+import { ConfigService } from '@rapidojs/config';
+
+// 5. 相对路径导入（按层级排序）
+import { AppModule } from './app.module.js';
+import { UsersService } from './users.service.js';
+import { CreateUserDto } from './dto/create-user.dto.js';
+```
+
+## package.json 配置
+
+确保包的 package.json 正确配置 ESM：
+
+```json
+{
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  }
+}
+```
+
+## TypeScript 配置
+
+tsconfig.json 应配置适当的模块设置：
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  }
+}
+```
+
+## 常见错误避免
+
+### 错误的导入方式
+
+```typescript
+// ❌ 错误 - 缺少 .js 扩展名
+import { UserService } from './user.service';
+
+// ❌ 错误 - 使用 .ts 扩展名
+import { UserService } from './user.service.ts';
+
+// ❌ 错误 - 默认导入 CommonJS 模块
+import UserService from './user.service.js';
+```
+
+### 正确的导入方式
+
+```typescript
+// ✅ 正确 - 命名导入 with .js 扩展名
+import { UserService } from './user.service.js';
+
+// ✅ 正确 - 多个命名导入
+import { UserService, UserRepository } from './user.service.js';
+
+// ✅ 正确 - 默认导入（当模块有默认导出时）
+import UserService from './user.service.js';
+```
+
+## 动态导入
+
+使用动态导入时也要包含扩展名：
+
+```typescript
+// ✅ 正确
+const module = await import('./dynamic-module.js');
+
+// ❌ 错误
+const module = await import('./dynamic-module');
+```

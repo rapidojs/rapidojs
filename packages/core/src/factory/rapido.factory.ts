@@ -6,6 +6,10 @@ import { AppConfig, StaticFileConfig } from '../interfaces/app-config.interface.
 import { MODULE_METADATA } from '../constants.js';
 import { HttpException } from '../exceptions/http-exception.js';
 import { HttpArgumentsHostImpl } from '../helpers/http-arguments-host.js';
+import { RapidoApp, CanActivate } from '../interfaces/rapido-app.interface.js';
+import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
+import { PipeTransform } from '../pipes/pipe-transform.interface.js';
+import { HttpExecutionContext } from '../helpers/execution-context.js';
 
 /**
  * The main factory for creating Rapido.js applications.
@@ -16,49 +20,16 @@ export class RapidoFactory {
    *
    * @param rootModule - The root module of the application, containing controllers.
    * @param config - Optional application configuration.
-   * @returns A promise that resolves to the configured Fastify instance.
+   * @returns A promise that resolves to the configured RapidoApp instance.
    */
-    public static async create(rootModule: Type<any>, config?: AppConfig): Promise<FastifyInstance & { 
-      addStaticFiles: (config: StaticFileConfig) => Promise<void>;
-      container: DIContainer;
-    }> {
+    public static async create(rootModule: Type<any>, config?: AppConfig): Promise<RapidoApp> {
     const app = fastify(config?.fastifyOptions) as unknown as FastifyInstance;
-
     const container = new DIContainer();
 
-    app.setErrorHandler(async (error: Error, request: FastifyRequest, reply: FastifyReply) => {
-      const filter = container.findFilter(error);
-      if (filter) {
-        const instance = await container.resolve(filter);
-        const host = new HttpArgumentsHostImpl(request, reply);
-        return instance.catch(error, host);
-      }
-
-      if (error instanceof HttpException) {
-        const status = error.getStatus();
-        const response = error.getResponse();
-
-        if (typeof response === 'string') {
-          reply.status(status).send({
-            statusCode: status,
-            error: error.constructor.name.replace(/Exception$/, ''),
-            message: response
-          });
-        } else {
-          reply.status(status).send({
-            statusCode: status,
-            ...(response as object)
-          });
-        }
-      } else {
-        request.log.error(error);
-        reply.status(500).send({
-          statusCode: 500,
-          error: 'Internal Server Error',
-          message: 'An unexpected error occurred.'
-        });
-      }
-    });
+    // 存储全局配置
+    let globalFilters: (ExceptionFilter | Type<ExceptionFilter>)[] = [];
+    let globalPipes: (PipeTransform | Type<PipeTransform>)[] = [];
+    let globalGuards: (CanActivate | Type<CanActivate>)[] = [];
 
 
     const registerStaticConfig = async (staticConfig: StaticFileConfig) => {
@@ -91,15 +62,168 @@ export class RapidoFactory {
 
     const controllers = container.getControllers(rootModule);
 
-    const registrar = new ControllerRegistrar(app, container);
+    // Helper functions for resolving instances
+    const resolveFilter = async (filter: ExceptionFilter | Type<ExceptionFilter>): Promise<ExceptionFilter> => {
+      if (typeof filter === 'function') {
+        try {
+          return await container.resolve(filter);
+        } catch {
+          return new filter();
+        }
+      }
+      return filter;
+    };
+
+    const resolvePipe = async (pipe: PipeTransform | Type<PipeTransform>): Promise<PipeTransform> => {
+      if (typeof pipe === 'function') {
+        try {
+          return await container.resolve(pipe);
+        } catch {
+          return new pipe();
+        }
+      }
+      return pipe;
+    };
+
+    const resolveGuard = async (guard: CanActivate | Type<CanActivate>): Promise<CanActivate> => {
+      if (typeof guard === 'function') {
+        try {
+          return await container.resolve(guard);
+        } catch {
+          return new guard();
+        }
+      }
+      return guard;
+    };
+
+    const canHandleException = (filter: ExceptionFilter, exception: Error): boolean => {
+      const filterClass = filter.constructor as Type<ExceptionFilter>;
+      const exceptionMetadata = Reflect.getMetadata('exception-filter:metadata', filterClass);
+      
+      if (exceptionMetadata && Array.isArray(exceptionMetadata)) {
+        return exceptionMetadata.some(exceptionType => exception instanceof exceptionType);
+      }
+      
+      return true;
+    };
+
+    const updateErrorHandler = () => {
+      app.setErrorHandler(async (error: Error, request: FastifyRequest, reply: FastifyReply) => {
+        // 首先尝试全局过滤器
+        for (const filter of globalFilters) {
+          const filterInstance = await resolveFilter(filter);
+          if (canHandleException(filterInstance, error)) {
+            const host = new HttpArgumentsHostImpl(request, reply);
+            return filterInstance.catch(error, host);
+          }
+        }
+
+        // 然后尝试容器中注册的过滤器
+        const containerFilter = container.findFilter(error);
+        if (containerFilter) {
+          const instance = await container.resolve(containerFilter);
+          const host = new HttpArgumentsHostImpl(request, reply);
+          return instance.catch(error, host);
+        }
+
+        // 默认错误处理
+        if (error instanceof HttpException) {
+          const status = error.getStatus();
+          const response = error.getResponse();
+
+          if (typeof response === 'string') {
+            reply.status(status).send({
+              statusCode: status,
+              error: error.constructor.name.replace(/Exception$/, ''),
+              message: response
+            });
+          } else {
+            reply.status(status).send({
+              statusCode: status,
+              ...(response as object)
+            });
+          }
+        } else {
+          request.log.error(error);
+          reply.status(500).send({
+            statusCode: 500,
+            error: 'Internal Server Error',
+            message: 'An unexpected error occurred.'
+          });
+        }
+      });
+    };
+
+    // 添加全局方法到 app 实例
+    (app as any).useGlobalFilters = (...filters: (ExceptionFilter | Type<ExceptionFilter>)[]): RapidoApp => {
+      globalFilters.push(...filters);
+      updateErrorHandler();
+      return app as RapidoApp;
+    };
+
+    (app as any).useGlobalPipes = (...pipes: (PipeTransform | Type<PipeTransform>)[]): RapidoApp => {
+      globalPipes.push(...pipes);
+      return app as RapidoApp;
+    };
+
+    (app as any).useGlobalGuards = (...guards: (CanActivate | Type<CanActivate>)[]): RapidoApp => {
+      globalGuards.push(...guards);
+      return app as RapidoApp;
+    };
+
+    (app as any).getGlobalFilters = (): (ExceptionFilter | Type<ExceptionFilter>)[] => {
+      return [...globalFilters];
+    };
+
+    (app as any).getGlobalPipes = (): (PipeTransform | Type<PipeTransform>)[] => {
+      return [...globalPipes];
+    };
+
+    (app as any).getGlobalGuards = (): (CanActivate | Type<CanActivate>)[] => {
+      return [...globalGuards];
+    };
+
+    // 添加访问全局管道和守卫的方法给 ControllerRegistrar 使用
+    (app as any).executeGlobalGuards = async (request: FastifyRequest, reply: FastifyReply): Promise<boolean> => {
+      if (globalGuards.length === 0) {
+        return true;
+      }
+
+      const context = new HttpExecutionContext(request, reply);
+
+      for (const guard of globalGuards) {
+        const guardInstance = await resolveGuard(guard);
+        const canActivate = await guardInstance.canActivate(context);
+        
+        if (!canActivate) {
+          return false;
+        }
+      }
+
+      return true;
+    };
+
+    (app as any).applyGlobalPipes = async (value: any, metadata: any): Promise<any> => {
+      let result = value;
+      
+      for (const pipe of globalPipes) {
+        const pipeInstance = await resolvePipe(pipe);
+        result = await pipeInstance.transform(result, metadata);
+      }
+      
+      return result;
+    };
+
+    // 初始设置错误处理器
+    updateErrorHandler();
+
+    // 注册控制器
+    const registrar = new ControllerRegistrar(app as RapidoApp, container);
     await registrar.register(controllers);
 
     // Attach the container to the app instance
     (app as any).container = container;
 
-    return app as FastifyInstance & { 
-      addStaticFiles: (config: StaticFileConfig) => Promise<void>;
-      container: DIContainer;
-    };
+    return app as RapidoApp;
   }
 }

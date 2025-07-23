@@ -1,0 +1,368 @@
+---
+globs: *.ts
+alwaysApply: false
+---
+# TypeScript 装饰器编程规范
+
+## 装饰器导入和使用
+
+### 控制器装饰器
+
+使用 @Controller 定义控制器，始终提供路径前缀：
+
+```typescript
+// ✅ 正确
+@Controller('/api/users')
+export class UsersController {}
+
+@Controller('/health')
+export class HealthController {}
+
+// ❌ 避免 - 没有路径前缀
+@Controller()
+export class UsersController {}
+```
+
+### 路由装饰器
+
+所有 HTTP 方法装饰器必须明确指定路径：
+
+```typescript
+// ✅ 正确
+@Get('/users')
+@Post('/users')
+@Put('/users/:id')
+@Delete('/users/:id')
+
+// ✅ 根路径使用 '/'
+@Get('/')
+findAll() {}
+
+// ❌ 避免 - 省略路径参数
+@Get()
+findAll() {}
+```
+
+### 参数装饰器规范
+
+使用参数装饰器时遵循以下规范：
+
+```typescript
+// ✅ 路径参数 - 始终使用管道进行类型转换
+@Get('/users/:id')
+findOne(@Param('id', ParseIntPipe) id: number) {}
+
+// ✅ 查询参数 - 可选参数使用 ?
+@Get('/users')
+findAll(
+  @Query('page', ParseIntPipe) page?: number,
+  @Query('limit', ParseIntPipe) limit?: number
+) {}
+
+// ✅ 请求体 - DTO 类自动应用 ValidationPipe
+@Post('/users')
+create(@Body() createUserDto: CreateUserDto) {}
+
+// ✅ 请求头
+@Get('/profile')
+getProfile(@Headers('authorization') token: string) {}
+```
+
+### 模块装饰器
+
+模块定义必须清晰地组织依赖关系：
+
+```typescript
+// ✅ 正确的模块定义
+@Module({
+  controllers: [UsersController],
+  providers: [UsersService, UsersRepository],
+  imports: [DatabaseModule],
+  exports: [UsersService], // 明确导出的服务
+})
+export class UsersModule {}
+```
+
+### 服务装饰器
+
+所有服务类必须使用 @Injectable 装饰器：
+
+```typescript
+// ✅ 正确
+@Injectable()
+export class UsersService {
+  constructor(private readonly repository: UsersRepository) {}
+}
+
+// ❌ 避免 - 缺少装饰器
+export class UsersService {}
+```
+
+## 装饰器顺序
+
+多个装饰器的顺序应遵循以下规范：
+
+```typescript
+// ✅ 正确的装饰器顺序
+@Controller('/users')
+export class UsersController {
+  @Post()
+  @UsePipes(CustomValidationPipe)
+  create(@Body() dto: CreateUserDto) {}
+}
+```
+
+## 命名约定
+
+### 控制器命名
+
+- 控制器类名：`{Feature}Controller`
+- 文件名：`{feature}.controller.ts`
+
+```typescript
+// ✅ 正确
+export class UsersController {}    // users.controller.ts
+export class ProductsController {} // products.controller.ts
+```
+
+### 服务命名
+
+- 服务类名：`{Feature}Service`
+- 文件名：`{feature}.service.ts`
+
+```typescript
+// ✅ 正确
+export class UsersService {}    // users.service.ts
+export class ProductsService {} // products.service.ts
+```
+
+### 模块命名
+
+- 模块类名：`{Feature}Module`
+- 文件名：`{feature}.module.ts`
+
+```typescript
+// ✅ 正确
+export class UsersModule {}    // users.module.ts
+export class ProductsModule {} // products.module.ts
+```
+
+## DTO 类规范
+
+DTO 类必须使用 class-validator 装饰器进行验证：
+
+```typescript
+// ✅ 正确的 DTO 定义
+export class CreateUserDto {
+  @IsNotEmpty()
+  @IsString()
+  name!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(120)
+  age?: number;
+}
+```
+
+## 错误处理
+
+使用框架提供的异常类：
+
+```typescript
+// ✅ 正确的异常处理
+@Get('/users/:id')
+findOne(@Param('id', ParseIntPipe) id: number) {
+  const user = this.usersService.findById(id);
+  if (!user) {
+    throw new NotFoundException(`用户 ${id} 不存在`);
+  }
+  return user;
+}
+```
+# TypeScript 装饰器编程规范
+
+## 装饰器导入和使用
+
+### 控制器装饰器
+
+使用 @Controller 定义控制器，始终提供路径前缀：
+
+```typescript
+// ✅ 正确
+@Controller('/api/users')
+export class UsersController {}
+
+@Controller('/health')
+export class HealthController {}
+
+// ❌ 避免 - 没有路径前缀
+@Controller()
+export class UsersController {}
+```
+
+### 路由装饰器
+
+所有 HTTP 方法装饰器必须明确指定路径：
+
+```typescript
+// ✅ 正确
+@Get('/users')
+@Post('/users')
+@Put('/users/:id')
+@Delete('/users/:id')
+
+// ✅ 根路径使用 '/'
+@Get('/')
+findAll() {}
+
+// ❌ 避免 - 省略路径参数
+@Get()
+findAll() {}
+```
+
+### 参数装饰器规范
+
+使用参数装饰器时遵循以下规范：
+
+```typescript
+// ✅ 路径参数 - 始终使用管道进行类型转换
+@Get('/users/:id')
+findOne(@Param('id', ParseIntPipe) id: number) {}
+
+// ✅ 查询参数 - 可选参数使用 ?
+@Get('/users')
+findAll(
+  @Query('page', ParseIntPipe) page?: number,
+  @Query('limit', ParseIntPipe) limit?: number
+) {}
+
+// ✅ 请求体 - DTO 类自动应用 ValidationPipe
+@Post('/users')
+create(@Body() createUserDto: CreateUserDto) {}
+
+// ✅ 请求头
+@Get('/profile')
+getProfile(@Headers('authorization') token: string) {}
+```
+
+### 模块装饰器
+
+模块定义必须清晰地组织依赖关系：
+
+```typescript
+// ✅ 正确的模块定义
+@Module({
+  controllers: [UsersController],
+  providers: [UsersService, UsersRepository],
+  imports: [DatabaseModule],
+  exports: [UsersService], // 明确导出的服务
+})
+export class UsersModule {}
+```
+
+### 服务装饰器
+
+所有服务类必须使用 @Injectable 装饰器：
+
+```typescript
+// ✅ 正确
+@Injectable()
+export class UsersService {
+  constructor(private readonly repository: UsersRepository) {}
+}
+
+// ❌ 避免 - 缺少装饰器
+export class UsersService {}
+```
+
+## 装饰器顺序
+
+多个装饰器的顺序应遵循以下规范：
+
+```typescript
+// ✅ 正确的装饰器顺序
+@Controller('/users')
+export class UsersController {
+  @Post()
+  @UsePipes(CustomValidationPipe)
+  create(@Body() dto: CreateUserDto) {}
+}
+```
+
+## 命名约定
+
+### 控制器命名
+
+- 控制器类名：`{Feature}Controller`
+- 文件名：`{feature}.controller.ts`
+
+```typescript
+// ✅ 正确
+export class UsersController {}    // users.controller.ts
+export class ProductsController {} // products.controller.ts
+```
+
+### 服务命名
+
+- 服务类名：`{Feature}Service`
+- 文件名：`{feature}.service.ts`
+
+```typescript
+// ✅ 正确
+export class UsersService {}    // users.service.ts
+export class ProductsService {} // products.service.ts
+```
+
+### 模块命名
+
+- 模块类名：`{Feature}Module`
+- 文件名：`{feature}.module.ts`
+
+```typescript
+// ✅ 正确
+export class UsersModule {}    // users.module.ts
+export class ProductsModule {} // products.module.ts
+```
+
+## DTO 类规范
+
+DTO 类必须使用 class-validator 装饰器进行验证：
+
+```typescript
+// ✅ 正确的 DTO 定义
+export class CreateUserDto {
+  @IsNotEmpty()
+  @IsString()
+  name!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(120)
+  age?: number;
+}
+```
+
+## 错误处理
+
+使用框架提供的异常类：
+
+```typescript
+// ✅ 正确的异常处理
+@Get('/users/:id')
+findOne(@Param('id', ParseIntPipe) id: number) {
+  const user = this.usersService.findById(id);
+  if (!user) {
+    throw new NotFoundException(`用户 ${id} 不存在`);
+  }
+  return user;
+}
+```

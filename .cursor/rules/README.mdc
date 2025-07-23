@@ -1,0 +1,93 @@
+# RapidoJS Cursor 规则总览
+
+这些规则是为 RapidoJS 项目定制的开发规范和最佳实践指导。
+
+## 📋 规则列表
+
+### 1. 项目结构指导 (rapidojs-project-structure.mdc)
+- **适用范围**: 始终应用
+- **作用**: 提供 RapidoJS 项目的整体架构指导
+- **内容**: 项目结构、包组织、技术栈等核心信息
+
+### 2. TypeScript 装饰器规范 (typescript-decorators.mdc)
+- **适用范围**: `*.ts`, `*.tsx` 文件
+- **作用**: 规范装饰器的使用方式和命名约定
+- **内容**: 控制器、路由、参数装饰器的正确用法
+
+### 3. ESM 模块导入规范 (esm-module-imports.mdc)
+- **适用范围**: `*.ts`, `*.js`, `*.mts`, `*.mjs` 文件
+- **作用**: 确保正确的 ESM 模块导入方式
+- **内容**: 文件扩展名要求、导入顺序、动态导入等
+
+### 4. 测试约定和最佳实践 (testing-conventions.mdc)
+- **适用范围**: `*.test.ts`, `*.spec.ts` 文件
+- **作用**: 统一测试代码的编写规范
+- **内容**: 测试结构、命名约定、Mock 使用、覆盖率要求等
+
+### 5. API 响应模式 (api-response-patterns.mdc)
+- **适用范围**: `*.controller.ts` 文件
+- **作用**: 规范 API 响应格式和错误处理
+- **内容**: 统一响应格式、状态码使用、分页模式、CRUD 操作标准
+
+### 6. 配置管理模式 (configuration-patterns.mdc)
+- **适用范围**: 手动应用（通过描述获取）
+- **作用**: 指导配置管理的最佳实践
+- **内容**: 配置模块设置、环境配置、类型安全、敏感信息处理
+
+## 🎯 如何使用这些规则
+
+### 自动应用的规则
+- `rapidojs-project-structure.mdc` - 始终为你提供项目结构指导
+
+### 基于文件类型的规则
+- 当你编辑 `.ts` 或 `.tsx` 文件时，装饰器规范和 ESM 导入规范会自动应用
+- 当你编辑 `.test.ts` 或 `.spec.ts` 文件时，测试约定会自动应用
+- 当你编辑 `.controller.ts` 文件时，API 响应模式会自动应用
+
+### 手动应用的规则
+- 配置管理模式需要通过描述手动获取，适用于配置相关的开发任务
+
+## 📚 规则详细说明
+
+### 项目结构原则
+- 采用 monorepo 结构，使用 pnpm workspaces
+- 核心包位于 `packages/` 目录
+- 示例应用位于 `apps/` 目录
+- 按功能模块组织代码
+
+### 代码风格要求
+- 使用 TypeScript 装饰器进行声明式编程
+- 遵循 ESM 模块规范，导入时包含 `.js` 扩展名
+- API 响应格式统一，包含 `success`、`data`、`message` 字段
+- 测试采用 AAA 模式（Arrange-Act-Assert）
+
+### 性能和最佳实践
+- 基于 Fastify 的高性能架构
+- 使用 SWC 进行快速编译
+- 智能管道系统自动检测 DTO 类型
+- 完整的类型安全支持
+
+### 开发工具
+- 测试框架：Vitest
+- 构建工具：SWC / TypeScript
+- 包管理：pnpm + Turborepo
+- 配置管理：支持 .env 和 YAML 配置文件
+
+## 🔧 维护这些规则
+
+当 RapidoJS 项目发生重大更新时，请相应更新这些规则：
+
+1. **新增功能时** - 更新相关规则以包含新的最佳实践
+2. **API 变更时** - 修改装饰器规范和响应模式
+3. **项目结构调整时** - 更新项目结构指导
+4. **测试策略变化时** - 调整测试约定
+
+## 📖 相关文档
+
+- [RapidoJS 文档](mdc:docs/README.md)
+- [快速开始指南](mdc:docs/getting-started.md)
+- [装饰器文档](mdc:docs/decorators.md)
+- [模块系统文档](mdc:docs/modules.md)
+- [配置管理文档](mdc:docs/configuration.md)
+
+这些规则旨在确保 RapidoJS 项目的代码质量、一致性和可维护性。

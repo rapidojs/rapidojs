@@ -5,6 +5,7 @@ import { DIContainer } from '../di/container.js';
 import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
 import { ValidationPipe } from '../pipes/validation.pipe.js';
 import { PipeMetadata } from '../decorators/pipe.decorators.js';
+import { RapidoApp } from '../interfaces/rapido-app.interface.js';
 
 
 
@@ -13,7 +14,7 @@ import { PipeMetadata } from '../decorators/pipe.decorators.js';
  */
 export class ControllerRegistrar {
     constructor(
-    private readonly fastify: FastifyInstance,
+    private readonly fastify: FastifyInstance | RapidoApp,
     private readonly container: DIContainer,
   ) {}
 
@@ -46,6 +47,19 @@ export class ControllerRegistrar {
       const params: ParamDefinition[] = Reflect.getMetadata(METADATA_KEY.PARAMS, controller.prototype, route.methodName) || [];
 
       const handler = async (request: any, reply: any) => {
+        // 执行全局守卫
+        if ('executeGlobalGuards' in this.fastify) {
+          const canActivate = await (this.fastify as any).executeGlobalGuards(request, reply);
+          if (!canActivate) {
+            reply.status(403).send({
+              statusCode: 403,
+              error: 'Forbidden',
+              message: 'Access denied by guard'
+            });
+            return;
+          }
+        }
+
         const args = await this.extractArguments(request, reply, params, controller, route.methodName);
         const result = await (controllerInstance as any)[route.methodName](...args);
         return result;
@@ -190,7 +204,14 @@ export class ControllerRegistrar {
    * Get effective pipes for a parameter, automatically adding ValidationPipe for DTO classes
    */
   private getEffectivePipes(metatype: any, classPipes: PipeMetadata[], methodPipes: PipeMetadata[], paramPipes: PipeMetadata[]): PipeMetadata[] {
-    const allPipes = [...classPipes, ...methodPipes, ...paramPipes];
+    // 获取全局管道
+    let globalPipes: PipeMetadata[] = [];
+    if ('getGlobalPipes' in this.fastify) {
+      globalPipes = (this.fastify as any).getGlobalPipes();
+    }
+
+    // 管道执行顺序：全局管道 -> 类级管道 -> 方法级管道 -> 参数级管道
+    const allPipes = [...globalPipes, ...classPipes, ...methodPipes, ...paramPipes];
     
     // Check if this is a DTO class and if ValidationPipe is not already present
     if (this.isDtoClass(metatype) && !this.hasValidationPipe(allPipes)) {

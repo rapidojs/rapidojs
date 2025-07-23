@@ -1,0 +1,440 @@
+# 配置管理最佳实践
+
+## 配置模块设置
+
+### 基础配置模块注册
+
+在根模块中注册配置模块：
+
+```typescript
+import { ConfigModule } from '@rapidojs/config';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      envFilePath: '.env',
+      configFilePath: 'config/app.yaml',
+      isGlobal: true, // 使配置模块全局可用
+      validate: validateConfig, // 配置验证函数
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### 配置验证函数
+
+创建配置验证函数确保关键配置项存在：
+
+```typescript
+function validateConfig(config: Record<string, any>): void {
+  const required = ['APP_NAME', 'APP_PORT', 'DATABASE_URL'];
+  
+  for (const key of required) {
+    if (!config[key]) {
+      throw new Error(`缺少必需的配置项: ${key}`);
+    }
+  }
+
+  // 验证端口号
+  const port = parseInt(config.APP_PORT, 10);
+  if (isNaN(port) || port < 1 || port > 65535) {
+    throw new Error(`无效的端口号: ${config.APP_PORT}`);
+  }
+}
+```
+
+## 环境配置文件
+
+### .env 文件结构
+
+```env
+# 应用配置
+NODE_ENV=development
+APP_NAME=RapidoJS App
+APP_PORT=3000
+APP_CONFIG_PATH=./config/app.yaml
+
+# 数据库配置
+DATABASE_URL=postgresql://user:pass@localhost:5432/myapp
+DATABASE_SSL=false
+
+# 认证配置
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=7d
+
+# 外部服务
+REDIS_URL=redis://localhost:6379
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+```
+
+### 环境特定配置文件
+
+支持多环境配置：
+
+```env
+# .env.development
+NODE_ENV=development
+APP_PORT=3000
+LOG_LEVEL=debug
+
+# .env.production
+NODE_ENV=production
+APP_PORT=8080
+LOG_LEVEL=warn
+
+# .env.test
+NODE_ENV=test
+APP_PORT=3001
+DATABASE_URL=postgresql://test:test@localhost:5432/test_db
+```
+
+## YAML 配置文件
+
+### 主配置文件 (config/app.yaml)
+
+```yaml
+app:
+  name: "${APP_NAME}"
+  version: "1.0.0"
+  environment: "${NODE_ENV}"
+  port: ${APP_PORT}
+  
+server:
+  host: "0.0.0.0"
+  keepAliveTimeout: 65000
+  bodyLimit: 1048576  # 1MB
+
+database:
+  url: "${DATABASE_URL}"
+  ssl: ${DATABASE_SSL}
+  pool:
+    min: 2
+    max: 10
+    idle: 10000
+
+auth:
+  jwt:
+    secret: "${JWT_SECRET}"
+    expiresIn: "${JWT_EXPIRES_IN}"
+    
+logging:
+  level: "${LOG_LEVEL:info}"
+  format: "json"
+  
+cache:
+  redis:
+    url: "${REDIS_URL}"
+    ttl: 3600
+
+email:
+  smtp:
+    host: "${SMTP_HOST}"
+    port: ${SMTP_PORT}
+    secure: false
+```
+
+### 功能特定配置文件
+
+```yaml
+# config/features.yaml
+features:
+  userRegistration:
+    enabled: true
+    requireEmailVerification: true
+    allowSocialLogin: false
+    
+  rateLimit:
+    enabled: true
+    windowMs: 900000  # 15 minutes
+    max: 100
+    
+  cors:
+    enabled: true
+    origins:
+      - "http://localhost:3000"
+      - "https://myapp.com"
+    credentials: true
+```
+
+## 服务中使用配置
+
+### 构造函数注入
+
+```typescript
+@Injectable()
+export class DatabaseService {
+  constructor(private readonly configService: ConfigService) {}
+
+  async connect() {
+    const dbUrl = this.configService.get<string>('database.url');
+    const poolConfig = this.configService.get('database.pool');
+    
+    // 使用配置连接数据库
+    return await createConnection({
+      url: dbUrl,
+      ...poolConfig,
+    });
+  }
+}
+```
+
+### 配置属性装饰器
+
+```typescript
+@Injectable()
+export class EmailService {
+  @ConfigProperty('email.smtp.host')
+  private readonly smtpHost!: string;
+
+  @ConfigProperty('email.smtp.port')
+  private readonly smtpPort!: number;
+
+  @ConfigProperty('email.smtp.secure', false)
+  private readonly smtpSecure!: boolean;
+
+  async sendEmail(to: string, subject: string, content: string) {
+    const transporter = createTransporter({
+      host: this.smtpHost,
+      port: this.smtpPort,
+      secure: this.smtpSecure,
+    });
+    
+    // 发送邮件逻辑
+  }
+}
+```
+
+### 嵌套配置访问
+
+```typescript
+@Injectable()
+export class AuthService {
+  constructor(private readonly configService: ConfigService) {}
+
+  generateToken(payload: any): string {
+    const jwtConfig = this.configService.get('auth.jwt');
+    
+    return jwt.sign(payload, jwtConfig.secret, {
+      expiresIn: jwtConfig.expiresIn,
+    });
+  }
+
+  verifyToken(token: string): any {
+    const secret = this.configService.get<string>('auth.jwt.secret');
+    return jwt.verify(token, secret);
+  }
+}
+```
+
+## 配置类型定义
+
+### 配置接口定义
+
+```typescript
+// config/interfaces/app-config.interface.ts
+export interface AppConfig {
+  app: {
+    name: string;
+    version: string;
+    environment: string;
+    port: number;
+  };
+  database: {
+    url: string;
+    ssl: boolean;
+    pool: {
+      min: number;
+      max: number;
+      idle: number;
+    };
+  };
+  auth: {
+    jwt: {
+      secret: string;
+      expiresIn: string;
+    };
+  };
+}
+```
+
+### 类型安全的配置访问
+
+```typescript
+@Injectable()
+export class ConfigurableService {
+  constructor(private readonly configService: ConfigService) {}
+
+  getTypedConfig<T = any>(key: string): T {
+    return this.configService.get<T>(key);
+  }
+
+  getAppConfig(): AppConfig['app'] {
+    return this.configService.get<AppConfig['app']>('app');
+  }
+
+  getDatabaseConfig(): AppConfig['database'] {
+    return this.configService.get<AppConfig['database']>('database');
+  }
+}
+```
+
+## 条件配置
+
+### 基于环境的配置
+
+```typescript
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      envFilePath: `.env.${process.env.NODE_ENV}`,
+      configFilePath: `config/${process.env.NODE_ENV}.yaml`,
+      isGlobal: true,
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### 功能开关
+
+```typescript
+@Injectable()
+export class FeatureService {
+  constructor(private readonly configService: ConfigService) {}
+
+  isFeatureEnabled(feature: string): boolean {
+    return this.configService.get<boolean>(`features.${feature}.enabled`, false);
+  }
+
+  async processUserRegistration(userData: any) {
+    if (this.isFeatureEnabled('userRegistration')) {
+      const requireVerification = this.configService.get<boolean>(
+        'features.userRegistration.requireEmailVerification',
+        false
+      );
+      
+      if (requireVerification) {
+        await this.sendVerificationEmail(userData.email);
+      }
+    } else {
+      throw new ForbiddenException('User registration is disabled');
+    }
+  }
+}
+```
+
+## 配置热重载
+
+### 开发环境配置监听
+
+```typescript
+@Injectable()
+export class ConfigWatcher {
+  constructor(
+    private readonly configService: ConfigService,
+    @Inject('FILE_WATCHER') private readonly watcher: any
+  ) {
+    this.setupConfigWatcher();
+  }
+
+  private setupConfigWatcher() {
+    if (process.env.NODE_ENV === 'development') {
+      this.watcher.watch('config/**/*.yaml', () => {
+        console.log('配置文件发生变化，重新加载...');
+        this.configService.reload();
+      });
+    }
+  }
+}
+```
+
+## 敏感信息处理
+
+### 配置值脱敏
+
+```typescript
+@Injectable()
+export class ConfigService {
+  private sensitiveKeys = ['password', 'secret', 'key', 'token'];
+
+  logConfiguration() {
+    const config = this.getAllConfig();
+    const sanitized = this.sanitizeConfig(config);
+    console.log('当前配置:', sanitized);
+  }
+
+  private sanitizeConfig(obj: any, path = ''): any {
+    const result: any = {};
+    
+    for (const [key, value] of Object.entries(obj)) {
+      const fullPath = path ? `${path}.${key}` : key;
+      
+      if (this.isSensitive(key)) {
+        result[key] = '***';
+      } else if (typeof value === 'object' && value !== null) {
+        result[key] = this.sanitizeConfig(value, fullPath);
+      } else {
+        result[key] = value;
+      }
+    }
+    
+    return result;
+  }
+
+  private isSensitive(key: string): boolean {
+    return this.sensitiveKeys.some(sensitive => 
+      key.toLowerCase().includes(sensitive.toLowerCase())
+    );
+  }
+}
+```
+
+## 配置最佳实践
+
+### 1. 配置分层
+
+```
+config/
+├── base.yaml          # 基础配置
+├── development.yaml   # 开发环境
+├── production.yaml    # 生产环境
+├── test.yaml         # 测试环境
+└── features.yaml     # 功能开关
+```
+
+### 2. 默认值策略
+
+```typescript
+// 始终提供合理的默认值
+const port = this.configService.get<number>('app.port', 3000);
+const timeout = this.configService.get<number>('server.timeout', 30000);
+const logLevel = this.configService.get<string>('logging.level', 'info');
+```
+
+### 3. 配置验证
+
+```typescript
+// 在应用启动时验证所有关键配置
+@Injectable()
+export class ConfigValidator {
+  constructor(private readonly configService: ConfigService) {
+    this.validateOnStartup();
+  }
+
+  private validateOnStartup() {
+    this.validateRequired(['app.name', 'app.port', 'database.url']);
+    this.validateTypes();
+    this.validateRanges();
+  }
+
+  private validateRequired(keys: string[]) {
+    for (const key of keys) {
+      if (!this.configService.get(key)) {
+        throw new Error(`必需的配置项 ${key} 未设置`);
+      }
+    }
+     }
+ }
+ ```

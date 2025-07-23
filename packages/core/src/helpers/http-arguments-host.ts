@@ -10,11 +10,11 @@ export class HttpArgumentsHostImpl implements ArgumentsHost, HttpArgumentsHost {
     this.reply = reply;
   }
 
-  getRequest<T = any>(): T {
+  getRequest<T = FastifyRequest>(): T {
     return this.request as T;
   }
 
-  getResponse<T = any>(): T {
+  getResponse<T = FastifyReply>(): T {
     return this.reply as T;
   }
 

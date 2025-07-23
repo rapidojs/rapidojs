@@ -1,0 +1,152 @@
+---
+alwaysApply: true
+---
+
+# RapidoJS 项目结构指导
+
+## 项目概述
+
+RapidoJS 是一个现代化的 TypeScript Node.js 框架，专为构建高性能、类型安全的 Web API 而设计。基于 Fastify 构建，提供装饰器驱动的开发体验。
+
+## 核心架构原则
+
+- **类型安全优先** - 完整的 TypeScript 支持
+- **装饰器驱动** - 使用装饰器简化开发
+- **高性能** - 基于 Fastify 构建
+- **模块化** - 清晰的模块化架构
+- **测试友好** - 内置测试支持
+
+## 项目结构
+
+```
+rapidojs/
+├── packages/                    # 核心包
+│   ├── core/                   # @rapidojs/core 核心包
+│   ├── config/                 # @rapidojs/config 配置包
+│   ├── cli/                    # @rapidojs/cli 命令行工具
+│   ├── common/                 # @rapidojs/common 通用包
+│   └── testing/                # @rapidojs/testing 测试包
+├── apps/                       # 应用示例
+│   └── example-api/           # 示例 API 应用
+├── docs/                      # 项目文档
+└── README.md                  # 项目说明
+```
+
+## 包结构规范
+
+每个包的结构应遵循：
+```
+package/
+├── src/
+│   ├── decorators/            # 装饰器实现
+│   ├── interfaces/            # 接口定义
+│   ├── services/              # 服务实现
+│   ├── types.ts               # 类型定义
+│   ├── index.ts               # 导出文件
+│   └── __tests__/             # 测试文件
+├── package.json
+├── tsconfig.json
+└── tsconfig.build.json
+```
+
+## 示例应用结构
+
+示例应用应按功能模块组织：
+```
+src/
+├── modules/                   # 功能模块
+│   ├── user/                 # 用户模块
+│   │   ├── dto/              # 数据传输对象
+│   │   ├── user.controller.ts
+│   │   ├── user.service.ts
+│   │   └── user.module.ts
+│   ├── product/              # 产品模块
+│   └── auth/                 # 认证模块
+├── app.controller.ts         # 应用根控制器
+├── app.module.ts             # 应用根模块
+└── main.ts                   # 应用入口
+```
+
+## 技术栈
+
+- **运行时**: Node.js 18+
+- **语言**: TypeScript 5.0+
+- **HTTP 服务器**: Fastify
+- **验证**: class-validator + class-transformer
+- **测试**: Vitest
+- **构建工具**: SWC / TypeScript Compiler
+- **包管理**: pnpm + Turborepo
+# RapidoJS 项目结构指导
+
+## 项目概述
+
+RapidoJS 是一个现代化的 TypeScript Node.js 框架，专为构建高性能、类型安全的 Web API 而设计。基于 Fastify 构建，提供装饰器驱动的开发体验。
+
+## 核心架构原则
+
+- **类型安全优先** - 完整的 TypeScript 支持
+- **装饰器驱动** - 使用装饰器简化开发
+- **高性能** - 基于 Fastify 构建
+- **模块化** - 清晰的模块化架构
+- **测试友好** - 内置测试支持
+
+## 项目结构
+
+```
+rapidojs/
+├── packages/                    # 核心包
+│   ├── core/                   # @rapidojs/core 核心包
+│   ├── config/                 # @rapidojs/config 配置包
+│   ├── cli/                    # @rapidojs/cli 命令行工具
+│   ├── common/                 # @rapidojs/common 通用包
+│   └── testing/                # @rapidojs/testing 测试包
+├── apps/                       # 应用示例
+│   └── example-api/           # 示例 API 应用
+├── docs/                      # 项目文档
+└── README.md                  # 项目说明
+```
+
+## 包结构规范
+
+每个包的结构应遵循：
+```
+package/
+├── src/
+│   ├── decorators/            # 装饰器实现
+│   ├── interfaces/            # 接口定义
+│   ├── services/              # 服务实现
+│   ├── types.ts               # 类型定义
+│   ├── index.ts               # 导出文件
+│   └── __tests__/             # 测试文件
+├── package.json
+├── tsconfig.json
+└── tsconfig.build.json
+```
+
+## 示例应用结构
+
+示例应用应按功能模块组织：
+```
+src/
+├── modules/                   # 功能模块
+│   ├── user/                 # 用户模块
+│   │   ├── dto/              # 数据传输对象
+│   │   ├── user.controller.ts
+│   │   ├── user.service.ts
+│   │   └── user.module.ts
+│   ├── product/              # 产品模块
+│   └── auth/                 # 认证模块
+├── app.controller.ts         # 应用根控制器
+├── app.module.ts             # 应用根模块
+└── main.ts                   # 应用入口
+```
+
+## 技术栈
+
+- **运行时**: Node.js 18+
+- **语言**: TypeScript 5.0+
+- **HTTP 服务器**: Fastify
+- **验证**: class-validator + class-transformer
+- **测试**: Vitest
+- **构建工具**: SWC / TypeScript Compiler
+- **包管理**: pnpm + Turborepo

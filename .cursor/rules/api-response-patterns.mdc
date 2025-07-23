@@ -1,0 +1,361 @@
+# API 响应模式和错误处理
+
+## 统一响应格式
+
+### 成功响应格式
+
+所有 API 端点应返回一致的响应格式：
+
+```typescript
+// ✅ 正确的成功响应格式
+@Get('/users')
+getAllUsers() {
+  const users = this.usersService.findAll();
+  return {
+    success: true,
+    data: users,
+    message: 'Users retrieved successfully',
+    meta: {
+      total: users.length,
+      page: 1,
+      limit: 10
+    }
+  };
+}
+
+@Post('/users')
+createUser(@Body() createUserDto: CreateUserDto) {
+  const newUser = this.usersService.create(createUserDto);
+  return {
+    success: true,
+    data: newUser,
+    message: 'User created successfully'
+  };
+}
+```
+
+### 错误响应格式
+
+错误响应应包含详细的错误信息：
+
+```typescript
+// ✅ 正确的错误响应格式
+@Get('/users/:id')
+getUserById(@Param('id', ParseIntPipe) id: number) {
+  const user = this.usersService.findById(id);
+  
+  if (!user) {
+    return {
+      success: false,
+      error: 'User not found',
+      statusCode: 404,
+      timestamp: new Date().toISOString(),
+      path: '/users/' + id
+    };
+  }
+
+  return {
+    success: true,
+    data: user,
+    message: 'User retrieved successfully'
+  };
+}
+```
+
+## HTTP 状态码使用
+
+### 常用状态码规范
+
+```typescript
+// ✅ 正确使用 HTTP 状态码
+@Get('/users/:id')
+@HttpCode(200)
+findOne(@Param('id', ParseIntPipe) id: number) {
+  // 200 OK - 成功获取资源
+}
+
+@Post('/users')
+@HttpCode(201)
+create(@Body() createUserDto: CreateUserDto) {
+  // 201 Created - 成功创建资源
+}
+
+@Put('/users/:id')
+@HttpCode(200)
+update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto) {
+  // 200 OK - 成功更新资源
+}
+
+@Delete('/users/:id')
+@HttpCode(204)
+remove(@Param('id', ParseIntPipe) id: number) {
+  // 204 No Content - 成功删除资源，无返回内容
+}
+```
+
+### 错误状态码
+
+```typescript
+// 使用框架异常类自动设置状态码
+@Get('/users/:id')
+findOne(@Param('id', ParseIntPipe) id: number) {
+  const user = this.usersService.findById(id);
+  
+  if (!user) {
+    throw new NotFoundException(`User with ID ${id} not found`);
+  }
+  
+  return user;
+}
+
+@Post('/users')
+create(@Body() createUserDto: CreateUserDto) {
+  const existingUser = this.usersService.findByEmail(createUserDto.email);
+  
+  if (existingUser) {
+    throw new ConflictException('User with this email already exists');
+  }
+  
+  return this.usersService.create(createUserDto);
+}
+```
+
+## 分页响应
+
+### 标准分页格式
+
+```typescript
+@Get('/users')
+findAll(@Query() queryDto: GetUsersQueryDto) {
+  const { data, total } = this.usersService.findAllWithPagination(queryDto);
+  
+  return {
+    success: true,
+    data,
+    message: 'Users retrieved successfully',
+    meta: {
+      total,
+      page: queryDto.page || 1,
+      limit: queryDto.limit || 10,
+      totalPages: Math.ceil(total / (queryDto.limit || 10)),
+      hasNext: (queryDto.page || 1) * (queryDto.limit || 10) < total,
+      hasPrev: (queryDto.page || 1) > 1
+    }
+  };
+}
+```
+
+### 分页 DTO
+
+```typescript
+export class PaginationQueryDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Transform(({ value }) => parseInt(value))
+  page?: number = 1;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @Transform(({ value }) => parseInt(value))
+  limit?: number = 10;
+
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  order?: 'asc' | 'desc' = 'asc';
+}
+```
+
+## 数据验证响应
+
+### 验证错误格式
+
+ValidationPipe 自动处理验证错误，但控制器应返回友好的错误信息：
+
+```typescript
+@Post('/users')
+async create(@Body() createUserDto: CreateUserDto) {
+  try {
+    const user = await this.usersService.create(createUserDto);
+    return {
+      success: true,
+      data: user,
+      message: 'User created successfully'
+    };
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return {
+        success: false,
+        error: 'Validation failed',
+        details: error.constraints,
+        statusCode: 400
+      };
+    }
+    throw error;
+  }
+}
+```
+
+## 资源操作模式
+
+### CRUD 操作标准模式
+
+```typescript
+@Controller('/users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  // CREATE - 创建资源
+  @Post()
+  @HttpCode(201)
+  async create(@Body() createUserDto: CreateUserDto) {
+    const user = await this.usersService.create(createUserDto);
+    return {
+      success: true,
+      data: user,
+      message: 'User created successfully'
+    };
+  }
+
+  // READ - 获取资源列表
+  @Get()
+  async findAll(@Query() query: GetUsersQueryDto) {
+    const result = await this.usersService.findAll(query);
+    return {
+      success: true,
+      data: result.data,
+      message: 'Users retrieved successfully',
+      meta: result.meta
+    };
+  }
+
+  // READ - 获取单个资源
+  @Get('/:id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const user = await this.usersService.findById(id);
+    
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    return {
+      success: true,
+      data: user,
+      message: 'User retrieved successfully'
+    };
+  }
+
+  // UPDATE - 更新资源
+  @Put('/:id')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto
+  ) {
+    const user = await this.usersService.update(id, updateUserDto);
+    
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    return {
+      success: true,
+      data: user,
+      message: 'User updated successfully'
+    };
+  }
+
+  // DELETE - 删除资源
+  @Delete('/:id')
+  @HttpCode(204)
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    const deleted = await this.usersService.remove(id);
+    
+    if (!deleted) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    // 204 状态码不返回响应体
+  }
+}
+```
+
+## 异步操作处理
+
+### 长时间运行的操作
+
+```typescript
+@Post('/users/bulk-import')
+@HttpCode(202) // 202 Accepted
+async bulkImport(@Body() importDto: BulkImportDto) {
+  const jobId = await this.usersService.startBulkImport(importDto);
+  
+  return {
+    success: true,
+    data: { jobId },
+    message: 'Bulk import started',
+    meta: {
+      estimatedTime: '5-10 minutes',
+      statusUrl: `/jobs/${jobId}/status`
+    }
+  };
+}
+
+@Get('/jobs/:jobId/status')
+async getJobStatus(@Param('jobId') jobId: string) {
+  const status = await this.jobsService.getStatus(jobId);
+  
+  return {
+    success: true,
+    data: status,
+    message: 'Job status retrieved'
+  };
+}
+```
+
+## 版本控制
+
+### API 版本控制模式
+
+```typescript
+// v1 控制器
+@Controller('/v1/users')
+export class UsersV1Controller {
+  @Get()
+  findAll() {
+    // v1 实现
+  }
+}
+
+// v2 控制器
+@Controller('/v2/users')
+export class UsersV2Controller {
+  @Get()
+  findAll() {
+    // v2 实现，向后兼容
+  }
+}
+```
+
+### 版本响应头
+
+```typescript
+@Get('/users')
+findAll(@Res() response: FastifyReply) {
+  const users = this.usersService.findAll();
+  
+  return response
+    .header('API-Version', '1.0')
+    .header('Deprecated', 'false')
+    .send({
+      success: true,
+      data: users,
+      message: 'Users retrieved successfully'
+         });
+ }
+ ```
