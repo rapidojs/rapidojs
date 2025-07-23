@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { METADATA_KEY } from '../constants.js';
 import { ParamDefinition, ParamType } from '../types.js';
-import { PipeTransform } from '../pipes/pipe-transform.interface.js';
+import { PipeTransform } from '../interfaces.js';
 
 // Type for pipe constructor
 type PipeConstructor = new (...args: any[]) => PipeTransform;
@@ -65,4 +65,4 @@ export const Body = createDecoratorWithPipe(ParamType.BODY);
 
 // Simple decorators without pipe support
 export const Req = createDecorator(ParamType.REQUEST);
-export const Res = createDecorator(ParamType.RESPONSE);
+export const Res = createDecorator(ParamType.RESPONSE); 

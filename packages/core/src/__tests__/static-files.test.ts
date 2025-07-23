@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { RapidoFactory } from '../factory/rapido.factory.js';
-import { Module } from '../decorators/module.decorator.js';
+import { Module, Get } from '../decorators/index.js';
 import { Controller } from '../decorators/controller.decorator.js';
-import { Get } from '../decorators/route.decorators.js';
 import { AppConfig, StaticFileConfig } from '../interfaces/app-config.interface.js';
 import { FastifyInstance } from 'fastify';
 import path from 'path';

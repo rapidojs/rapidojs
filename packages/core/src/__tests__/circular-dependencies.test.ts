@@ -2,11 +2,8 @@ import 'reflect-metadata';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { RapidoFactory } from '../factory/rapido.factory.js';
-import { Module } from '../decorators/module.decorator.js';
+import { Module, Get, Injectable, Inject } from '../decorators/index.js';
 import { Controller } from '../decorators/controller.decorator.js';
-import { Get } from '../decorators/route.decorators.js';
-import { Injectable } from '../decorators/injectable.decorator.js';
-import { Inject } from '../decorators/inject.decorator.js';
 import { forwardRef } from '../di/forward-ref.js';
 import { DIContainer } from '../di/container.js';
 

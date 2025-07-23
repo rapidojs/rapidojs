@@ -4,7 +4,7 @@ import { RouteDefinition, ParamDefinition, ParamType, Type } from '../types.js';
 import { DIContainer } from '../di/container.js';
 import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
 import { ValidationPipe } from '../pipes/validation.pipe.js';
-import { PipeMetadata } from '../decorators/pipe.decorators.js';
+import { PipeMetadata } from '@rapidojs/common';
 import { RapidoApp } from '../interfaces/rapido-app.interface.js';
 
 

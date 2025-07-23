@@ -107,7 +107,13 @@ export class RapidoFactory {
       return true;
     };
 
-    const updateErrorHandler = () => {
+    let errorHandlerSet = false;
+
+    const setupErrorHandler = () => {
+      if (errorHandlerSet) {
+        return; // 避免重复设置
+      }
+      
       app.setErrorHandler(async (error: Error, request: FastifyRequest, reply: FastifyReply) => {
         // 首先尝试全局过滤器
         for (const filter of globalFilters) {
@@ -152,12 +158,14 @@ export class RapidoFactory {
           });
         }
       });
+      
+      errorHandlerSet = true;
     };
 
     // 添加全局方法到 app 实例
     (app as any).useGlobalFilters = (...filters: (ExceptionFilter | Type<ExceptionFilter>)[]): RapidoApp => {
       globalFilters.push(...filters);
-      updateErrorHandler();
+      setupErrorHandler(); // 只在第一次调用时设置
       return app as RapidoApp;
     };
 
@@ -214,8 +222,7 @@ export class RapidoFactory {
       return result;
     };
 
-    // 初始设置错误处理器
-    updateErrorHandler();
+    // 延迟设置错误处理器，只有在有全局过滤器时才设置
 
     // 注册控制器
     const registrar = new ControllerRegistrar(app as RapidoApp, container);

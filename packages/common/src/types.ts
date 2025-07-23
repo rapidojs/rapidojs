@@ -1,7 +1,22 @@
+import { PipeTransform } from './interfaces.js';
+
 /**
- * HTTP 方法类型
+ * HTTP 方法枚举
  */
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
+export enum HttpMethod {
+  GET = 'GET',
+  POST = 'POST',
+  PUT = 'PUT',
+  DELETE = 'DELETE',
+  PATCH = 'PATCH',
+  OPTIONS = 'OPTIONS',
+  HEAD = 'HEAD'
+}
+
+/**
+ * HTTP 方法类型（向后兼容）
+ */
+export type HttpMethodType = HttpMethod;
 
 /**
  * Enum for supported parameter decorator types.
@@ -98,4 +113,9 @@ export interface ModuleMetadata {
 export type Provider = Type<any> | {
   provide: any;
   useValue: any;
-}; 
+};
+
+/**
+ * Type representing a pipe constructor or instance
+ */
+export type PipeMetadata = PipeTransform | (new (...args: any[]) => PipeTransform); 

@@ -12,4 +12,4 @@ export function Catch(...exceptions: Type<any>[]): ClassDecorator {
   return (target: object) => {
     Reflect.defineMetadata(EXCEPTION_FILTER_METADATA, exceptions, target);
   };
-}
+} 

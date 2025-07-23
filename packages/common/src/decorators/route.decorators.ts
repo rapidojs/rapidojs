@@ -1,4 +1,5 @@
-import { HttpMethod } from '@rapidojs/common';
+import 'reflect-metadata';
+import { HttpMethod } from '../types.js';
 import { METADATA_KEY } from '../constants.js';
 import { RouteDefinition } from '../types.js';
 
@@ -33,24 +34,24 @@ const createRouteDecorator = (method: HttpMethod) => {
 /**
  * Decorator for mapping HTTP GET requests.
  */
-export const Get = createRouteDecorator('GET');
+export const Get = createRouteDecorator(HttpMethod.GET);
 
 /**
  * Decorator for mapping HTTP POST requests.
  */
-export const Post = createRouteDecorator('POST');
+export const Post = createRouteDecorator(HttpMethod.POST);
 
 /**
  * Decorator for mapping HTTP PUT requests.
  */
-export const Put = createRouteDecorator('PUT');
+export const Put = createRouteDecorator(HttpMethod.PUT);
 
 /**
  * Decorator for mapping HTTP DELETE requests.
  */
-export const Delete = createRouteDecorator('DELETE');
+export const Delete = createRouteDecorator(HttpMethod.DELETE);
 
 /**
  * Decorator for mapping HTTP PATCH requests.
  */
-export const Patch = createRouteDecorator('PATCH');
+export const Patch = createRouteDecorator(HttpMethod.PATCH); 

@@ -5,8 +5,7 @@ import { EXCEPTION_FILTER_METADATA, CONTROLLER_METADATA } from '../constants.js'
 import { ForwardReference } from '@rapidojs/common';
 import { isForwardReference } from './forward-ref.js';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
-import { INJECT_METADATA_KEY } from '../decorators/inject.decorator.js';
-import { MODULE_METADATA_KEY } from '../decorators/module.decorator.js';
+import { INJECT_METADATA_KEY, MODULE_METADATA_KEY } from '../constants.js';
 
 export class DIContainer {
   private instances: Map<Type<any>, any> = new Map();

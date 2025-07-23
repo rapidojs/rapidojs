@@ -1,11 +1,12 @@
+import 'reflect-metadata';
 import { describe, it, expect } from 'vitest';
 import { 
   UsePipes,
   QueryWithPipe,
   ParamWithPipe,
-  BodyWithPipe,
-  PipeMetadata 
-} from '../decorators/pipe.decorators.js';
+  BodyWithPipe
+} from '../decorators/index.js';
+import { PipeMetadata } from '@rapidojs/common';
 import { METADATA_KEY } from '../constants.js';
 import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
 import {

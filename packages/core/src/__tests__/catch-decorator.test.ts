@@ -1,5 +1,6 @@
+import 'reflect-metadata';
 import { describe, it, expect } from 'vitest';
-import { Catch } from '../decorators/catch.decorator.js';
+import { Catch } from '../decorators/index.js';
 import { EXCEPTION_FILTER_METADATA } from '../constants.js';
 import { HttpException } from '../exceptions/http-exception.js';
 import {

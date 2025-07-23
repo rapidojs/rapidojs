@@ -1,7 +1,5 @@
 // 从 common 包导入基础类型
-export {
-  HttpMethod,
-  ParamType,
+export type {
   ParamDefinition,
   Type,
   RouteDefinition,
@@ -14,7 +12,13 @@ export {
   CanActivate,
   ExecutionContext,
   ValidationPipeOptions,
-  PipeMetadata,
+  PipeMetadata
+} from '@rapidojs/common';
+
+// 导出运行时值
+export {
+  HttpMethod,
+  ParamType,
   HttpStatus
 } from '@rapidojs/common';
 

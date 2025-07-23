@@ -37,5 +37,20 @@
   "author": "RapidoJS Team",
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.1.13"
+  },
+  "devDependencies": {
+    "@types/reflect-metadata": "*"
+  },
+  "peerDependencies": {
+    "pino": "^8.0.0",
+    "pino-pretty": "^10.0.0"
+  },
+  "peerDependenciesMeta": {
+    "pino-pretty": {
+      "optional": true
+    }
   }
 }

@@ -1,11 +1,6 @@
 import 'reflect-metadata';
 import { Type } from '../types.js';
-import { METADATA_KEY } from '../constants.js';
-
-/**
- * 用于存储自定义注入令牌的元数据键
- */
-export const INJECT_METADATA_KEY = 'rapido:inject';
+import { INJECT_METADATA_KEY } from '../constants.js';
 
 /**
  * 参数装饰器，用于标记构造函数参数以进行依赖注入
@@ -30,4 +25,4 @@ export function Inject(token?: any): ParameterDecorator {
       Reflect.defineMetadata(INJECT_METADATA_KEY, injectMetadata, target);
     }
   };
-}
+} 

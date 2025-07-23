@@ -1,10 +1,7 @@
 import 'reflect-metadata';
 import { METADATA_KEY } from '../constants.js';
-import { Type, PipeTransform, PipeMetadata } from '../types.js';
+import { Type, PipeMetadata } from '../types.js';
 import { Query, Param, Body } from './param.decorators.js';
-
-// 重新导出类型以供其他模块使用
-export { PipeMetadata };
 
 /**
  * Decorator that applies pipes to a method or controller.
@@ -92,4 +89,4 @@ export function BodyWithPipe(...pipes: PipeMetadata[]) {
 
     return Body()(target, propertyKey, parameterIndex);
   };
-}
+} 

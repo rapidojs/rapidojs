@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import 'reflect-metadata';
-import { Injectable } from '../decorators/injectable.decorator.js';
+import { Injectable } from '../decorators/index.js';
 import { Controller } from '../decorators/controller.decorator.js';
 import { METADATA_KEY } from '../constants.js';
 

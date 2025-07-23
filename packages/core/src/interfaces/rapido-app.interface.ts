@@ -1,11 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { StaticFileConfig } from './app-config.interface.js';
 import { ExceptionFilter } from './exception-filter.interface.js';
-import { PipeTransform, CanActivate, ExecutionContext, Type } from '../types.js';
+import type { PipeTransform, CanActivate, ExecutionContext, Type } from '../types.js';
 import { DIContainer } from '../di/container.js';
 
 // 重新导出基础接口以保持向后兼容
-export { CanActivate, ExecutionContext } from '../types.js';
+export type { CanActivate, ExecutionContext } from '../types.js';
 
 // 为 Fastify 特定化的 ExecutionContext
 export interface FastifyExecutionContext extends ExecutionContext<FastifyRequest, FastifyReply> {

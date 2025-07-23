@@ -1,5 +1,6 @@
+import 'reflect-metadata';
 import { describe, it, expect } from 'vitest';
-import { Query, Param, Body, Headers, Req, Res } from '../decorators/param.decorators.js';
+import { Query, Param, Body, Headers, Req, Res } from '../decorators/index.js';
 import { METADATA_KEY } from '../constants.js';
 import { ParamType } from '../types.js';
 import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';

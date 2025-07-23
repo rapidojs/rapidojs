@@ -4,6 +4,7 @@ import { AppModule } from './app.module.js';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { ConfigService } from '@rapidojs/config';
+import { LoggerService, LogLevel, createLoggerConfig } from '@rapidojs/common';
 import { GlobalAuthGuard } from './modules/global-features/global-auth.guard.js';
 import { GlobalLoggingPipe } from './modules/global-features/global-logging.pipe.js';
 import { GlobalErrorFilter } from './modules/global-features/global-error.filter.js';
@@ -15,6 +16,12 @@ async function bootstrap() {
   try {
     console.log('Starting bootstrap...');
     
+    // 创建支持文本格式输出的 logger 配置
+    const loggerConfig = createLoggerConfig({
+      prettyPrint: true,  // 启用文本格式，类似 one-line-logger
+      level: LogLevel.DEBUG,
+    });
+    
     // 使用 RapidoFactory 的静态文件配置
     const app = await RapidoFactory.create(AppModule, {
       staticFiles: [
@@ -23,7 +30,10 @@ async function bootstrap() {
           prefix: '/public/',
           index: false
         }
-      ]
+      ],
+      fastifyOptions: {
+        logger: loggerConfig,
+      },
     });
     
     console.log('App created successfully');
@@ -42,6 +52,7 @@ async function bootstrap() {
     // 从容器中获取 ConfigService 实例
     const configService = await app.container.resolve(ConfigService);
     const port = configService.get<number>('app.port');
+    const host = configService.get<string>('app.host', '127.0.0.1');
 
 
     // 添加根路径重定向到测试页面
@@ -49,9 +60,9 @@ async function bootstrap() {
       return reply.redirect('/public/index.html');
     });
 
-    await app.listen({ port, host: '0.0.0.0' });
-    console.log(`🚀 Server listening on http://localhost:${port}`);
-    console.log('📖 API 测试页面: http://localhost:3000');
+    await app.listen({ port, host });
+    console.log(`🚀 Server listening on http://${host}:${port}`);
+    console.log('📖 API 测试页面: http://${host}:${port}');
     console.log('📚 多模块架构演示:');
     console.log('  👤 用户模块: /users');
     console.log('  📦 产品模块: /products');
