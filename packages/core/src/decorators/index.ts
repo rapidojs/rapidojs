@@ -1,5 +1,5 @@
 // 导出本地的 Controller 装饰器（集成了 tsyringe）
-export * from './controller.decorator.js';
+export { Controller } from '@rapidojs/common';
 
 // 重新导出来自 common 包的其他装饰器
 export {

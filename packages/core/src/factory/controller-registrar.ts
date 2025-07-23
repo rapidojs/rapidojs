@@ -47,22 +47,27 @@ export class ControllerRegistrar {
       const params: ParamDefinition[] = Reflect.getMetadata(METADATA_KEY.PARAMS, controller.prototype, route.methodName) || [];
 
       const handler = async (request: any, reply: any) => {
-        // 执行全局守卫
-        if ('executeGlobalGuards' in this.fastify) {
-          const canActivate = await (this.fastify as any).executeGlobalGuards(request, reply);
-          if (!canActivate) {
-            reply.status(403).send({
-              statusCode: 403,
-              error: 'Forbidden',
-              message: 'Access denied by guard'
-            });
-            return;
+        try {
+          // 执行全局守卫
+          if ('executeGlobalGuards' in this.fastify) {
+            const canActivate = await (this.fastify as any).executeGlobalGuards(request, reply);
+            if (!canActivate) {
+              reply.status(403).send({
+                statusCode: 403,
+                error: 'Forbidden',
+                message: 'Access denied by guard'
+              });
+              return;
+            }
           }
-        }
 
-        const args = await this.extractArguments(request, reply, params, controller, route.methodName);
-        const result = await (controllerInstance as any)[route.methodName](...args);
-        return result;
+          const args = await this.extractArguments(request, reply, params, controller, route.methodName);
+          const result = await (controllerInstance as any)[route.methodName](...args);
+          return result;
+        } catch (error) {
+          // 重新抛出异常，让 Fastify 的错误处理器处理
+          throw error;
+        }
       };
 
       const fastifyMethod = route.method.toLowerCase() as keyof FastifyInstance;

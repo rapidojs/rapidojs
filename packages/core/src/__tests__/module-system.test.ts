@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { RapidoFactory } from '../factory/rapido.factory.js';
 import { Module, Get, Injectable, Inject } from '../decorators/index.js';
-import { Controller } from '../decorators/controller.decorator.js';
+import { Controller } from '../decorators/index.js';
 
 // 1. Define a simple injectable service
 @Injectable()

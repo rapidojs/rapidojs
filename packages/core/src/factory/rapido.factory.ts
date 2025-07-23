@@ -10,6 +10,7 @@ import { RapidoApp, CanActivate } from '../interfaces/rapido-app.interface.js';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
 import { PipeTransform } from '../pipes/pipe-transform.interface.js';
 import { HttpExecutionContext } from '../helpers/execution-context.js';
+import { EXCEPTION_FILTER_METADATA } from '../constants.js';
 
 /**
  * The main factory for creating Rapido.js applications.
@@ -98,12 +99,13 @@ export class RapidoFactory {
 
     const canHandleException = (filter: ExceptionFilter, exception: Error): boolean => {
       const filterClass = filter.constructor as Type<ExceptionFilter>;
-      const exceptionMetadata = Reflect.getMetadata('exception-filter:metadata', filterClass);
+      const exceptionMetadata = Reflect.getMetadata(EXCEPTION_FILTER_METADATA, filterClass);
       
       if (exceptionMetadata && Array.isArray(exceptionMetadata)) {
         return exceptionMetadata.some(exceptionType => exception instanceof exceptionType);
       }
       
+      // 如果没有指定异常类型，默认捕获所有异常
       return true;
     };
 
@@ -165,7 +167,7 @@ export class RapidoFactory {
     // 添加全局方法到 app 实例
     (app as any).useGlobalFilters = (...filters: (ExceptionFilter | Type<ExceptionFilter>)[]): RapidoApp => {
       globalFilters.push(...filters);
-      setupErrorHandler(); // 只在第一次调用时设置
+      // 错误处理器已经在应用创建时设置，这里只需要更新过滤器列表
       return app as RapidoApp;
     };
 
@@ -222,7 +224,8 @@ export class RapidoFactory {
       return result;
     };
 
-    // 延迟设置错误处理器，只有在有全局过滤器时才设置
+    // 立即设置错误处理器
+    setupErrorHandler();
 
     // 注册控制器
     const registrar = new ControllerRegistrar(app as RapidoApp, container);

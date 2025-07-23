@@ -39,7 +39,8 @@
     "access": "public"
   },
   "dependencies": {
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.1.13",
+    "tsyringe": "^4.8.0"
   },
   "devDependencies": {
     "@types/reflect-metadata": "*"

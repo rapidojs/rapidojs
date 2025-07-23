@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { RapidoFactory } from '../factory/rapido.factory.js';
 import { Module, Get, Post, Put, Delete, Query, Param, Body, Headers, Req, Res } from '../decorators/index.js';
-import { Controller } from '../decorators/controller.decorator.js';
+import { Controller } from '../decorators/index.js';
 
 // 测试控制器
 @Controller('/test')
