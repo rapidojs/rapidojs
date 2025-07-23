@@ -1,58 +1,6 @@
 import { validate, ValidationError } from 'class-validator';
 import { plainToClass } from 'class-transformer';
-import { PipeTransform, ArgumentMetadata } from './pipe-transform.interface.js';
-
-export interface ValidationPipeOptions {
-  /**
-   * If set to true, validator will strip validated (returned) object of any properties that do not use any validation decorators.
-   */
-  whitelist?: boolean;
-  
-  /**
-   * If set to true, instead of stripping non-whitelisted properties validator will throw an exception.
-   */
-  forbidNonWhitelisted?: boolean;
-  
-  /**
-   * If set to true, attempts to validate unknown objects fail immediately.
-   */
-  forbidUnknownValues?: boolean;
-  
-  /**
-   * If set to true, class-transformer will attempt to convert primitive types to target type.
-   */
-  transform?: boolean;
-  
-  /**
-   * If set to true, the validation process will be skipped if the object is not an instance of the target class.
-   */
-  skipMissingProperties?: boolean;
-  
-  /**
-   * Groups to be used during validation of the object.
-   */
-  groups?: string[];
-  
-  /**
-   * If set to true, the validation will not use default messages.
-   */
-  dismissDefaultMessages?: boolean;
-  
-  /**
-   * Settings for the class-transformer.
-   */
-  transformOptions?: any;
-  
-  /**
-   * Custom error message factory
-   */
-  errorHttpStatusCode?: number;
-  
-  /**
-   * Expected error message
-   */
-  expectedType?: string;
-}
+import { PipeTransform, ArgumentMetadata, ValidationPipeOptions } from '@rapidojs/common';
 
 /**
  * Built-in pipe that validates and transforms objects using class-validator and class-transformer

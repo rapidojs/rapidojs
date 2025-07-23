@@ -1,12 +1,4 @@
-import { Type } from '../types.js';
-
-/**
- * 延迟引用类型，用于解决循环依赖
- */
-export interface ForwardReference<T = any> {
-  forwardRef: true;
-  (): Type<T>;
-}
+import { Type, ForwardReference } from '@rapidojs/common';
 
 /**
  * 创建一个延迟引用，用于解决循环依赖
@@ -39,3 +31,4 @@ export function forwardRef<T = any>(fn: () => Type<T>): ForwardReference<T> {
 export function isForwardReference(typeOrToken: any): typeOrToken is ForwardReference {
   return typeOrToken && typeof typeOrToken === 'function' && 'forwardRef' in typeOrToken && typeOrToken.forwardRef === true;
 }
+

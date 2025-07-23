@@ -1,28 +1,27 @@
 import 'reflect-metadata';
 import { METADATA_KEY } from '../constants.js';
-import { Type } from '../types.js';
+import { Type, PipeTransform, PipeMetadata } from '../types.js';
 import { Query, Param, Body } from './param.decorators.js';
-import { PipeTransform } from '../pipes/pipe-transform.interface.js';
 
-/**
- * Type representing a pipe constructor or instance
- */
-export type PipeMetadata = PipeTransform | (new (...args: any[]) => PipeTransform);
+// 重新导出类型以供其他模块使用
+export { PipeMetadata };
 
 /**
  * Decorator that applies pipes to a method or controller.
  * Pipes are executed in the order they are provided.
  * 
  * @param pipes - Array of pipe instances or constructors
+ * @returns MethodDecorator & ClassDecorator
  * 
  * @example
  * ```typescript
  * @Controller('/users')
- * export class UsersController {
- *   @Get('/:id')
- *   @UsePipes(new ParseIntPipe())
- *   getUser(@Param('id') id: number) {
- *     return { id };
+ * @UsePipes(new ValidationPipe()) // Class-level pipe
+ * class UsersController {
+ *   @Post('/')
+ *   @UsePipes(new TransformPipe()) // Method-level pipe
+ *   createUser(@Body() createUserDto: CreateUserDto) {
+ *     // method body
  *   }
  * }
  * ```

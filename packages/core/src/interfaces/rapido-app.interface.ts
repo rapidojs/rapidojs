@@ -1,40 +1,16 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { StaticFileConfig } from './app-config.interface.js';
 import { ExceptionFilter } from './exception-filter.interface.js';
-import { PipeTransform } from '../pipes/pipe-transform.interface.js';
+import { PipeTransform, CanActivate, ExecutionContext, Type } from '../types.js';
 import { DIContainer } from '../di/container.js';
-import { Type } from '../types.js';
 
-/**
- * Guard interface for route protection
- */
-export interface CanActivate {
-  /**
-   * Determines whether the request should be allowed to proceed
-   * @param context - The execution context containing request information
-   * @returns boolean or Promise<boolean> indicating if access should be granted
-   */
-  canActivate(context: ExecutionContext): boolean | Promise<boolean>;
-}
+// 重新导出基础接口以保持向后兼容
+export { CanActivate, ExecutionContext } from '../types.js';
 
-/**
- * Execution context interface providing access to request/response
- */
-export interface ExecutionContext {
-  /**
-   * Get the underlying Fastify request object
-   */
+// 为 Fastify 特定化的 ExecutionContext
+export interface FastifyExecutionContext extends ExecutionContext<FastifyRequest, FastifyReply> {
   getRequest<T = FastifyRequest>(): T;
-  
-  /**
-   * Get the underlying Fastify response object
-   */
   getResponse<T = FastifyReply>(): T;
-  
-  /**
-   * Get additional context data
-   */
-  getContext(): any;
 }
 
 /**
