@@ -1,15 +1,18 @@
 import 'reflect-metadata';
 import { Injectable } from '../decorators/injectable.decorator.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
- * 日志级别枚举
+ * 日志级别枚举 - 与 Pino 日志级别对应
  */
 export enum LogLevel {
-  ERROR = 'error',
-  WARN = 'warn',
-  INFO = 'info',
-  DEBUG = 'debug',
-  TRACE = 'trace',
+  TRACE = 'trace',  // 10 - 最详细
+  DEBUG = 'debug',  // 20 - 调试信息
+  INFO = 'info',    // 30 - 一般信息 (默认)
+  WARN = 'warn',    // 40 - 警告
+  ERROR = 'error',  // 50 - 错误
+  FATAL = 'fatal',  // 60 - 致命错误
 }
 
 /**
@@ -20,40 +23,43 @@ export interface LogContext {
 }
 
 /**
- * Fastify Logger 配置选项
+ * Logger 配置选项
  */
 export interface LoggerOptions {
-  /**
-   * 是否启用文本格式输出（类似 one-line-logger）
-   * 默认为 false，使用 JSON 格式
-   */
-  prettyPrint?: boolean;
   /**
    * 日志级别
    */
   level?: LogLevel | string;
   /**
-   * 自定义日志格式化函数
+   * 是否强制开启 pretty print，默认会根据 NODE_ENV 自动判断
    */
-  customPrettifier?: (log: any) => string;
+  prettyPrint?: boolean;
 }
 
 /**
  * RapidoJS 日志服务
- * 
+ *
  * 这是一个 Injectable 服务，提供统一的日志接口。
- * 它可以与 Fastify 的日志系统集成，支持 JSON 和文本格式输出。
- * 
+ * 它与 Fastify 的日志系统 (Pino) 集成，支持开发和生产环境的不同输出格式。
+ *
  * @example
  * ```typescript
+ * // 方式1: 使用依赖注入 (推荐)
  * @Injectable()
  * export class UserService {
- *   constructor(private readonly logger: LoggerService) {}
- * 
- *   createUser(userData: any) {
- *     this.logger.log('Creating new user', 'UserService');
- *     // ...
- *     this.logger.debug('User created successfully', { userId: user.id });
+ *   constructor(private readonly logger: LoggerService) {
+ *     this.logger.setContext(UserService.name);
+ *   }
+ * }
+ *
+ * // 方式2: 直接实例化并指定上下文
+ * @Controller('/users')
+ * export class UserController {
+ *   private readonly logger = new LoggerService(UserController);
+ *
+ *   @Get('/')
+ *   findAll() {
+ *     this.logger.log('Finding all users'); // 输出: [UserController] Finding all users
  *   }
  * }
  * ```
@@ -63,25 +69,36 @@ export class LoggerService {
   private fastifyLogger: any;
   private context: string = 'Application';
 
-  constructor() {
-    // 初始化时将使用默认的控制台输出
-    // 在应用启动时，可以通过 setFastifyLogger 设置实际的 Fastify logger
-    this.fastifyLogger = console;
+  // 全局共享的 Fastify logger 实例
+  private static globalFastifyLogger: any = null;
+
+  constructor(context?: string | Function) {
+    // 优先使用全局的 Fastify logger，如果没有则使用控制台
+    this.fastifyLogger = LoggerService.globalFastifyLogger || console;
+
+    // 支持传入上下文字符串或类构造函数
+    if (context) {
+      if (typeof context === 'function') {
+        this.context = context.name;
+      } else {
+        this.context = context;
+      }
+    }
   }
 
   /**
-   * 设置 Fastify Logger 实例
-   * 这个方法应该在应用启动时调用，将 Fastify 的 logger 传递给服务
-   * 
+   * 设置全局 Fastify Logger 实例
+   * 这个方法应该在应用启动时调用，所有新创建的 LoggerService 实例都会使用这个 logger
+   *
    * @param logger Fastify logger 实例
    */
-  public setFastifyLogger(logger: any): void {
-    this.fastifyLogger = logger;
+  public static setGlobalFastifyLogger(logger: any): void {
+    LoggerService.globalFastifyLogger = logger;
   }
 
   /**
-   * 设置全局日志上下文
-   * 
+   * 设置当前 logger 实例的上下文
+   *
    * @param context 上下文名称，通常是模块或服务名称
    */
   public setContext(context: string): void {
@@ -89,24 +106,7 @@ export class LoggerService {
   }
 
   /**
-   * 创建一个具有特定上下文的子 logger
-   * 
-   * @param context 上下文名称
-   * @returns 新的 LoggerService 实例
-   */
-  public getSubLogger(context: string): LoggerService {
-    const subLogger = new LoggerService();
-    subLogger.setFastifyLogger(this.fastifyLogger);
-    subLogger.setContext(context);
-    return subLogger;
-  }
-
-  /**
    * 记录一般信息日志
-   * 
-   * @param message 日志消息
-   * @param context 可选的上下文名称，会覆盖默认上下文
-   * @param extra 额外的上下文数据
    */
   public log(message: string, context?: string, extra?: LogContext): void {
     this.info(message, context, extra);
@@ -114,189 +114,98 @@ export class LoggerService {
 
   /**
    * 记录信息级别日志
-   * 
-   * @param message 日志消息
-   * @param context 可选的上下文名称
-   * @param extra 额外的上下文数据
    */
   public info(message: string, context?: string, extra?: LogContext): void {
-    const logData = this.formatLogData(message, context || this.context, extra);
-    
-    if (this.fastifyLogger && typeof this.fastifyLogger.info === 'function') {
-      this.fastifyLogger.info(logData);
-    } else {
-      console.info(this.formatForConsole('INFO', logData));
-    }
+    const logContext = context || this.context || 'Application';
+    this.fastifyLogger.info({ context: logContext, ...extra }, message);
   }
 
   /**
    * 记录错误级别日志
-   * 
-   * @param message 日志消息或错误对象
-   * @param trace 错误堆栈信息
-   * @param context 可选的上下文名称
-   * @param extra 额外的上下文数据
    */
   public error(message: string | Error, trace?: string, context?: string, extra?: LogContext): void {
-    let logData: any;
-    
+    const logContext = context || this.context || 'Application';
     if (message instanceof Error) {
-      logData = this.formatLogData(message.message, context || this.context, {
-        ...extra,
-        stack: message.stack,
-        name: message.name,
-      });
+      this.fastifyLogger.error({ context: logContext, err: message, ...extra }, message.message);
     } else {
-      logData = this.formatLogData(message, context || this.context, {
-        ...extra,
-        stack: trace,
-      });
-    }
-
-    if (this.fastifyLogger && typeof this.fastifyLogger.error === 'function') {
-      this.fastifyLogger.error(logData);
-    } else {
-      console.error(this.formatForConsole('ERROR', logData));
+      this.fastifyLogger.error({ context: logContext, stack: trace, ...extra }, message);
     }
   }
 
   /**
    * 记录警告级别日志
-   * 
-   * @param message 日志消息
-   * @param context 可选的上下文名称
-   * @param extra 额外的上下文数据
    */
   public warn(message: string, context?: string, extra?: LogContext): void {
-    const logData = this.formatLogData(message, context || this.context, extra);
-    
-    if (this.fastifyLogger && typeof this.fastifyLogger.warn === 'function') {
-      this.fastifyLogger.warn(logData);
-    } else {
-      console.warn(this.formatForConsole('WARN', logData));
-    }
+    const logContext = context || this.context || 'Application';
+    this.fastifyLogger.warn({ context: logContext, ...extra }, message);
   }
 
   /**
    * 记录调试级别日志
-   * 
-   * @param message 日志消息
-   * @param context 可选的上下文名称
-   * @param extra 额外的上下文数据
    */
   public debug(message: string, context?: string, extra?: LogContext): void {
-    const logData = this.formatLogData(message, context || this.context, extra);
-    
-    if (this.fastifyLogger && typeof this.fastifyLogger.debug === 'function') {
-      this.fastifyLogger.debug(logData);
-    } else {
-      console.debug(this.formatForConsole('DEBUG', logData));
-    }
+    const logContext = context || this.context || 'Application';
+    this.fastifyLogger.debug({ context: logContext, ...extra }, message);
   }
 
   /**
    * 记录详细跟踪日志
-   * 
-   * @param message 日志消息
-   * @param context 可选的上下文名称
-   * @param extra 额外的上下文数据
    */
   public trace(message: string, context?: string, extra?: LogContext): void {
-    const logData = this.formatLogData(message, context || this.context, extra);
-    
-    if (this.fastifyLogger && typeof this.fastifyLogger.trace === 'function') {
-      this.fastifyLogger.trace(logData);
-    } else {
-      console.trace(this.formatForConsole('TRACE', logData));
-    }
-  }
-
-  /**
-   * 格式化日志数据
-   * 
-   * @private
-   */
-  private formatLogData(message: string, context: string, extra?: LogContext): any {
-    const baseData = {
-      message,
-      context,
-      timestamp: new Date().toISOString(),
-    };
-
-    if (extra && Object.keys(extra).length > 0) {
-      return { ...baseData, ...extra };
-    }
-
-    return baseData;
-  }
-
-  /**
-   * 为控制台输出格式化日志
-   * 
-   * @private
-   */
-  private formatForConsole(level: string, data: any): string {
-    const timestamp = data.timestamp || new Date().toISOString();
-    const context = data.context || 'Application';
-    const message = data.message || '';
-    
-    // 简化的单行格式，类似 one-line-logger 风格
-    let logLine = `[${timestamp}] ${level} [${context}] ${message}`;
-    
-    // 如果有额外数据，添加到日志行
-    const extraData = { ...data };
-    delete extraData.message;
-    delete extraData.context;
-    delete extraData.timestamp;
-    
-    if (Object.keys(extraData).length > 0) {
-      logLine += ` ${JSON.stringify(extraData)}`;
-    }
-    
-    return logLine;
+    const logContext = context || this.context || 'Application';
+    this.fastifyLogger.trace({ context: logContext, ...extra }, message);
   }
 }
 
 /**
- * 创建 Fastify Logger 配置，支持文本格式输出
- * 
+ * 创建 Fastify Logger 配置，支持环境自适应
+ *
  * @param options 日志配置选项
  * @returns Fastify logger 配置对象
  */
 export function createLoggerConfig(options: LoggerOptions = {}): any {
-  const { prettyPrint = false, level = LogLevel.INFO, customPrettifier } = options;
+  const { level = LogLevel.INFO } = options;
+  const isDevelopment = process.env.NODE_ENV !== 'production';
 
-  if (prettyPrint) {
-    // 使用 transport 方式避免 prettyPrint 废弃问题
+  // 允许通过 options.prettyPrint 强制覆盖
+  const usePrettyPrint = options.prettyPrint ?? isDevelopment;
+
+  if (usePrettyPrint) {
+    // 开发环境: 显示完整的调试信息，包括请求和响应详情
     return {
       level,
+      formatters: {
+        log(object: any) {
+          if (!object.context) {
+            object.context = 'Application';
+          }
+          return object;
+        },
+      },
       transport: {
         target: 'pino-pretty',
         options: {
-          translateTime: 'yyyy-mm-dd HH:MM:ss.l Z',  // 年月日时分秒毫秒
-          ignore: 'hostname',  // 只忽略 hostname，保留 pid
-          colorize: false,
-          singleLine: true,
+          colorize: true,
+          translateTime: 'yyyy-mm-dd HH:MM:ss.l',
+          ignore: 'hostname',
+          messageFormat: '[{context}]: {msg}',
+          hideObject: false,  // 显示所有对象详情
+          singleLine: false,  // 多行显示，便于阅读
         },
       },
     };
   }
 
-  // 默认 JSON 格式
+  // 生产环境: 输出标准 JSON
   return {
     level,
-    serializers: {
-      req(request: any) {
-        return {
-          method: request.method,
-          url: request.url,
-          headers: request.headers,
-        };
-      },
-      res(reply: any) {
-        return {
-          statusCode: reply.statusCode,
-        };
+    formatters: {
+      // 确保 context 字段存在
+      log(object: any) {
+        if (!object.context) {
+          object.context = 'Application';
+        }
+        return object;
       },
     },
   };

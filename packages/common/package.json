@@ -40,7 +40,8 @@
   },
   "dependencies": {
     "reflect-metadata": "^0.1.13",
-    "tsyringe": "^4.8.0"
+    "tsyringe": "^4.8.0",
+    "split2": "^4.2.0"
   },
   "devDependencies": {
     "@types/reflect-metadata": "*"

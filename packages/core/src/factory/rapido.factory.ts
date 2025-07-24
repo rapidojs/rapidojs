@@ -11,6 +11,7 @@ import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
 import { PipeTransform } from '../pipes/pipe-transform.interface.js';
 import { HttpExecutionContext } from '../helpers/execution-context.js';
 import { EXCEPTION_FILTER_METADATA } from '../constants.js';
+import { LoggerService } from '@rapidojs/common';
 
 /**
  * The main factory for creating Rapido.js applications.
@@ -26,6 +27,13 @@ export class RapidoFactory {
     public static async create(rootModule: Type<any>, config?: AppConfig): Promise<RapidoApp> {
     const app = fastify(config?.fastifyOptions) as unknown as FastifyInstance;
     const container = new DIContainer();
+
+    // Set the global logger as soon as the app instance is created.
+    // This ensures any LoggerService instantiated hereafter (manually or by DI)
+    // gets the correct logger instance.
+    if (app.log) {
+      LoggerService.setGlobalFastifyLogger(app.log);
+    }
 
     // 存储全局配置
     let globalFilters: (ExceptionFilter | Type<ExceptionFilter>)[] = [];

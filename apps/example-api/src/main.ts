@@ -16,10 +16,9 @@ async function bootstrap() {
   try {
     console.log('Starting bootstrap...');
     
-    // 创建支持文本格式输出的 logger 配置
+    // 创建环境自适应的 logger 配置
     const loggerConfig = createLoggerConfig({
-      prettyPrint: true,  // 启用文本格式，类似 one-line-logger
-      level: LogLevel.DEBUG,
+      level: LogLevel.INFO,  // 改为 INFO 级别，这样 INFO 及以上级别的日志都会输出
     });
     
     // 使用 RapidoFactory 的静态文件配置
@@ -37,7 +36,7 @@ async function bootstrap() {
     });
     
     console.log('App created successfully');
-    
+
     // 配置全局功能 - 类似 NestJS 的方式
     app
       .useGlobalFilters(new GlobalErrorFilter())  // 全局错误处理

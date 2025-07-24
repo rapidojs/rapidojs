@@ -6,11 +6,11 @@
   "type": "module",
   "main": "./dist/main.js",
   "scripts": {
-    "start": "node --enable-source-maps ./dist/main.js",
+    "start": "NODE_ENV=production node --enable-source-maps ./dist/main.js",
     "build": "pnpm run clean && pnpm run build:swc",
     "build:swc": "swc src -d dist --strip-leading-paths --source-maps --copy-files",
     "clean": "rm -rf dist",
-    "dev": "pnpm run build:swc --watch",
+    "dev": "NODE_ENV=development swc src -d dist --strip-leading-paths --source-maps --copy-files --watch & NODE_ENV=development node --enable-source-maps ./dist/main.js",
     "lint": "eslint ."
   },
   "dependencies": {

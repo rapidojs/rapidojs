@@ -1,6 +1,7 @@
 import { Module } from '@rapidojs/core';
 import { AppController } from './app.controller.js';
 import { ConfigModule } from '@rapidojs/config';
+import { LoggerService } from '@rapidojs/common';
 
 // Import feature modules
 import { UserModule } from './modules/user/user.module.js';
