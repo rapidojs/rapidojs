@@ -6,7 +6,8 @@ import { LoggerService } from '@rapidojs/common';
 // Import feature modules
 import { UserModule } from './modules/user/user.module.js';
 import { ProductModule } from './modules/product/product.module.js';
-import { AuthModule } from './modules/auth/auth.module.js';
+import { AuthModule } from '@rapidojs/auth';
+import { ConfigService } from '@rapidojs/config';
 import { ExceptionsModule } from './modules/exceptions/exceptions.module.js';
 import { ConfigDemoModule } from './modules/config/config.module.js';
 
@@ -33,10 +34,15 @@ function validateConfig(config: Record<string, any>): void {
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: ['.env', '.env.local'],
-      configFilePath: 'config/app.yaml',
-      validationSchema: validateConfig,
-      throwOnMissingFile: false, // 在开发环境中允许文件不存在
+      isGlobal: true,
+      configFilePath: './config/app.yaml',
+    }),
+    AuthModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('JWT_SECRET', 'a-very-secret-key'),
+      }),
+      inject: [ConfigService],
     }),
     UserModule, 
     ProductModule, 

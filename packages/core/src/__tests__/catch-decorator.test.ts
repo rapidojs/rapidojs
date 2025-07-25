@@ -9,7 +9,7 @@ import {
   InternalServerErrorException,
 } from '../exceptions/built-in-exceptions.js';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
-import { ArgumentsHost } from '../interfaces/arguments-host.interface.js';
+import { ArgumentsHost } from '@rapidojs/common';
 
 describe('@Catch 装饰器', () => {
   describe('基本功能', () => {

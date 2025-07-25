@@ -1,9 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { HttpExecutionContext } from '../helpers/execution-context.js';
-import { HttpArgumentsHostImpl } from '../helpers/http-arguments-host.js';
-import { ExecutionContext, CanActivate } from '../interfaces/rapido-app.interface.js';
-import { ArgumentsHost } from '../interfaces/arguments-host.interface.js';
+import { HttpExecutionContextImpl } from '../helpers/execution-context-impl.js';
+import { ExecutionContext, CanActivate } from '@rapidojs/common';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
 
 describe('类型安全性测试', () => {
@@ -12,8 +10,8 @@ describe('类型安全性测试', () => {
       const mockRequest = { url: '/test', method: 'GET', headers: {} } as FastifyRequest;
       const mockReply = { status: () => ({ send: () => {} }) } as any as FastifyReply;
       
-      const context = new HttpExecutionContext(mockRequest, mockReply);
-      const request = context.getRequest();
+      const context = new HttpExecutionContextImpl(mockRequest, mockReply);
+      const request = context.getRequest<FastifyRequest>();
       
       // TypeScript 编译时类型检查
       expect(request.url).toBe('/test');
@@ -29,8 +27,8 @@ describe('类型安全性测试', () => {
         })
       } as any as FastifyReply;
       
-      const context = new HttpExecutionContext(mockRequest, mockReply);
-      const response = context.getResponse();
+      const context = new HttpExecutionContextImpl(mockRequest, mockReply);
+      const response = context.getResponse<FastifyReply>();
       
       // TypeScript 编译时类型检查
       expect(typeof response.status).toBe('function');
@@ -40,7 +38,7 @@ describe('类型安全性测试', () => {
       const mockRequest = { customProperty: 'test' } as FastifyRequest & { customProperty: string };
       const mockReply = {} as FastifyReply;
       
-      const context = new HttpExecutionContext(mockRequest, mockReply);
+      const context = new HttpExecutionContextImpl(mockRequest, mockReply);
       const request = context.getRequest<FastifyRequest & { customProperty: string }>();
       
       expect(request.customProperty).toBe('test');
@@ -52,7 +50,7 @@ describe('类型安全性测试', () => {
       const mockRequest = { url: '/test', method: 'POST' } as FastifyRequest;
       const mockReply = {} as FastifyReply;
       
-      const host = new HttpArgumentsHostImpl(mockRequest, mockReply);
+      const host = new HttpExecutionContextImpl(mockRequest, mockReply);
       const httpContext = host.switchToHttp();
       const request = httpContext.getRequest();
       
@@ -67,7 +65,7 @@ describe('类型安全性测试', () => {
         status: (code: number) => ({ send: (body: any) => body })
       } as any as FastifyReply;
       
-      const host = new HttpArgumentsHostImpl(mockRequest, mockReply);
+      const host = new HttpExecutionContextImpl(mockRequest, mockReply);
       const httpContext = host.switchToHttp();
       const response = httpContext.getResponse();
       
@@ -80,7 +78,8 @@ describe('类型安全性测试', () => {
     it('Guard 中应该能正确访问 FastifyRequest 属性', () => {
       class TypeSafeGuard implements CanActivate {
         canActivate(context: ExecutionContext): boolean {
-          const request = context.getRequest(); // 应该是 FastifyRequest 类型
+          const httpContext = context.switchToHttp();
+          const request = httpContext.getRequest(); // 应该是 FastifyRequest 类型
           
           // 这些属性访问在 TypeScript 中应该是类型安全的
           const url = request.url;
@@ -101,14 +100,14 @@ describe('类型安全性测试', () => {
       const mockReply = {} as FastifyReply;
       
       const guard = new TypeSafeGuard();
-      const context = new HttpExecutionContext(mockRequest, mockReply);
+      const context = new HttpExecutionContextImpl(mockRequest, mockReply);
       
       expect(guard.canActivate(context)).toBe(true);
     });
 
     it('ExceptionFilter 中应该能正确访问 FastifyReply 方法', () => {
       class TypeSafeFilter implements ExceptionFilter {
-        catch(exception: Error, host: ArgumentsHost): void {
+        catch(exception: Error, host: ExecutionContext): void {
           const ctx = host.switchToHttp();
           const response = ctx.getResponse(); // 应该是 FastifyReply 类型
           const request = ctx.getRequest(); // 应该是 FastifyRequest 类型
@@ -131,7 +130,7 @@ describe('类型安全性测试', () => {
       } as any as FastifyReply;
       
       const filter = new TypeSafeFilter();
-      const host = new HttpArgumentsHostImpl(mockRequest, mockReply);
+      const host = new HttpExecutionContextImpl(mockRequest, mockReply);
       const error = new Error('Test error');
       
       filter.catch(error, host);
@@ -149,7 +148,7 @@ describe('类型安全性测试', () => {
       const mockRequest = {} as FastifyRequest;
       const mockReply = {} as FastifyReply;
       
-      const context = new HttpExecutionContext(mockRequest, mockReply);
+      const context = new HttpExecutionContextImpl(mockRequest, mockReply);
       
       // TypeScript 应该能正确推断这些类型
       const request: FastifyRequest = context.getRequest();

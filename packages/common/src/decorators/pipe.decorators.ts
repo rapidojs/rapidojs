@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { METADATA_KEY } from '../constants.js';
-import { Type, PipeMetadata } from '../types.js';
+import { PipeMetadata } from '../interfaces.js';
 import { Query, Param, Body } from './param.decorators.js';
 
 /**

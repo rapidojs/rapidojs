@@ -60,11 +60,11 @@ v1.0.0 版本已成功发布，为框架奠定了坚实的基础，使其成为�
     * 开箱即用的守卫：`JwtAuthGuard`（基于 `JwtStrategy`）。
     * 辅助装饰器：`@Public()`（标记公开路由），`@CurrentUser()`（参数装饰器，注入用户信息）。
 * **关键实现路径**:
-    * [ ] **定义核心接口**: 在 `@rapidojs/common` 中定义 `ExecutionContext`、`CanActivate` 等核心接口。
-    * [ ] **增强核心注册器**: 修改 `@rapidojs/core` 的路由注册器，使其支持并执行守卫逻辑。
-    * [ ] **设计并实现 Strategy 模式**: 定义通用的 AuthStrategy 接口，并重构 JwtAuthGuard 以使用 JwtStrategy，为未来的 OAuth2 等策略铺平道路。
-    * [ ] **开发 `@rapidojs/auth` 包**: 集成并封装 `@fastify/jwt`，并实现 `JwtAuthGuard` 和相关装饰器。
-    * [ ] **编写测试**: 针对守卫的执行顺序、`@Public` 的豁免能力、`@CurrentUser` 的注入能力编写完整的单元和集成测试。
+    * [x] **定义核心接口**: 在 `@rapidojs/common` 中定义 `ExecutionContext`、`CanActivate` 等核心接口。
+    * [x] **增强核心注册器**: 修改 `@rapidojs/core` 的路由注册器，使其支持并执行守卫逻辑。
+    * [x] **设计并实现 Strategy 模式**: 定义通用的 AuthStrategy 接口，并重构 JwtAuthGuard 以使用 JwtStrategy，为未来的 OAuth2 等策略铺平道路。
+    * [x] **开发 `@rapidojs/auth` 包**: 集成并封装 `@fastify/jwt`，并实现 `JwtAuthGuard` 和相关装饰器。
+    * [x] **编写测试**: 针对守卫的执行顺序、`@Public` 的豁免能力、`@CurrentUser` 的注入能力编写完整的单元和集成测试。
 
 ##### **2. 核心与通用模块增强**
 

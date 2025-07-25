@@ -1,3 +1,5 @@
+import { ROUTE_ARGS_METADATA as COMMON_ROUTE_ARGS_METADATA } from '@rapidojs/common';
+
 /**
  * A collection of constant values used as keys for reflect-metadata.
  * Using symbols ensures that metadata keys are unique and avoids potential conflicts.
@@ -7,17 +9,18 @@ export const METADATA_KEY = {
    * Metadata key for storing the prefix of a controller.
    * Applied by the @Controller decorator.
    */
-  CONTROLLER_PREFIX: Symbol.for('rapido:controller:prefix'),
+  CONTROLLER_PREFIX: Symbol('controller:prefix'),
 
   /**
    * Metadata key for storing route definitions on a controller class.
    * Applied by method decorators like @Get, @Post, etc.
    */
-  ROUTES: Symbol.for('rapido:routes'),
-  PARAMS: Symbol.for('rapido:params'),
+  ROUTES: Symbol('controller:routes'),
+  PARAMS: Symbol('controller:params'),
   PIPES: Symbol.for('rapido:pipes'),
   PARAM_PIPES: Symbol.for('rapido:param_pipes'),
-  GUARDS: Symbol.for('rapido:guards')
+  GUARDS: Symbol('controller:guards'),
+  ROUTE_ARGS_METADATA: COMMON_ROUTE_ARGS_METADATA
 };
 
 export const MODULE_METADATA = 'module:metadata';

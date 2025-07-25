@@ -56,7 +56,9 @@ describe('SWC Decorator Metadata Support', () => {
 
   it('should handle controller decorator metadata', () => {
     // 检查 Controller 装饰器是否正确应用
-    const controllerPath = Reflect.getMetadata(METADATA_KEY.CONTROLLER_PREFIX, TestController);
-    expect(controllerPath).toBe('/test');
+    // Controller 装饰器使用 MODULE_METADATA_KEY 而不是 CONTROLLER_PREFIX
+    const metadata = Reflect.getMetadata('rapido:module', TestController);
+    expect(metadata).toBeDefined();
+    expect(metadata.prefix).toBe('/test');
   });
 });

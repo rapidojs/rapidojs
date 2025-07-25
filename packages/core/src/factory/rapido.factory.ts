@@ -3,15 +3,13 @@ import { ControllerRegistrar } from './controller-registrar.js';
 import { DIContainer } from '../di/container.js';
 import { Type } from '../types.js';
 import { AppConfig, StaticFileConfig } from '../interfaces/app-config.interface.js';
-import { MODULE_METADATA } from '../constants.js';
+import { MODULE_METADATA, EXCEPTION_FILTER_METADATA } from '../constants.js';
 import { HttpException } from '../exceptions/http-exception.js';
-import { HttpArgumentsHostImpl } from '../helpers/http-arguments-host.js';
-import { RapidoApp, CanActivate } from '../interfaces/rapido-app.interface.js';
+import { RapidoApp } from '../interfaces/rapido-app.interface.js';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
 import { PipeTransform } from '../pipes/pipe-transform.interface.js';
-import { HttpExecutionContext } from '../helpers/execution-context.js';
-import { EXCEPTION_FILTER_METADATA } from '../constants.js';
-import { LoggerService } from '@rapidojs/common';
+import { CanActivate, LoggerService } from '@rapidojs/common';
+import { HttpExecutionContextImpl } from '../helpers/execution-context-impl.js';
 
 /**
  * The main factory for creating Rapido.js applications.
@@ -129,7 +127,7 @@ export class RapidoFactory {
         for (const filter of globalFilters) {
           const filterInstance = await resolveFilter(filter);
           if (canHandleException(filterInstance, error)) {
-            const host = new HttpArgumentsHostImpl(request, reply);
+            const host = new HttpExecutionContextImpl(request, reply, null, null);
             return filterInstance.catch(error, host);
           }
         }
@@ -138,7 +136,7 @@ export class RapidoFactory {
         const containerFilter = container.findFilter(error);
         if (containerFilter) {
           const instance = await container.resolve(containerFilter);
-          const host = new HttpArgumentsHostImpl(request, reply);
+          const host = new HttpExecutionContextImpl(request, reply, null, null);
           return instance.catch(error, host);
         }
 
@@ -207,7 +205,7 @@ export class RapidoFactory {
         return true;
       }
 
-      const context = new HttpExecutionContext(request, reply);
+      const context = new HttpExecutionContextImpl(request, reply, null, null);
 
       for (const guard of globalGuards) {
         const guardInstance = await resolveGuard(guard);

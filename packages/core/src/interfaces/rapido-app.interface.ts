@@ -1,14 +1,18 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { StaticFileConfig } from './app-config.interface.js';
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { Type } from '../types.js';
 import { ExceptionFilter } from './exception-filter.interface.js';
-import type { PipeTransform, CanActivate, ExecutionContext, Type } from '../types.js';
+import { PipeTransform } from '../pipes/pipe-transform.interface.js';
+import { CanActivate, ExecutionContext } from '@rapidojs/common';
 import { DIContainer } from '../di/container.js';
+import { StaticFileConfig } from './app-config.interface.js';
 
 // 重新导出基础接口以保持向后兼容
 export type { CanActivate, ExecutionContext } from '../types.js';
 
-// 为 Fastify 特定化的 ExecutionContext
-export interface FastifyExecutionContext extends ExecutionContext<FastifyRequest, FastifyReply> {
+/**
+ * An extended execution context specific to Fastify.
+ */
+export interface FastifyExecutionContext extends ExecutionContext {
   getRequest<T = FastifyRequest>(): T;
   getResponse<T = FastifyReply>(): T;
 }

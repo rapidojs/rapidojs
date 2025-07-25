@@ -289,6 +289,22 @@ export class ApiController {
 }
 ```
 
+### 认证与授权
+
+```typescript
+import { AuthModule, JwtAuthGuard } from '@rapidojs/auth';
+import { UseGuards, CurrentUser } from '@rapidojs/common';
+
+@Controller('/api/profile')
+@UseGuards(JwtAuthGuard)
+export class ProfileController {
+  @Get()
+  getProfile(@CurrentUser() user: any) {
+    return user;
+  }
+}
+```
+
 ## 📊 性能表现
 
 | 框架 | 每秒请求数 (RPS) | 延迟 (ms) | 内存使用 (MB) |
@@ -350,17 +366,17 @@ rapidojs/
 - [x] **CLI 工具** - 项目生成和管理
 - [x] **测试覆盖** - 89.22% 测试覆盖率
 
-### 🔄 开发中 (v1.0)
+### 🔄 开发中 (v1.1)
 
-- [ ] API 冻结与稳定性测试
+- [ ] 拦截器 (Interceptors) 与 AOP
+- [ ] 任务调度 `@rapidojs/schedule`
+- [ ] CLI 功能增强 (`add`, `g <schematic>`)
 - [ ] 完整文档站点
-- [ ] 示例项目和最佳实践
-- [ ] 性能基准测试
 
-### 🎯 未来计划 (v2.0+)
+### 🎯 未来计划 (v1.2+)
 
-- [ ] 中间件系统
-- [ ] 守卫 (Guards) 和拦截器 (Interceptors)
+- [ ] 数据库集成 `@rapidojs/typeorm`
+- [ ] 缓存模块 `@rapidojs/redis`
 - [ ] WebSocket 支持
 - [ ] GraphQL 集成
 - [ ] 微服务支持

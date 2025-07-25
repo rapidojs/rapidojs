@@ -1,4 +1,4 @@
-import { ArgumentsHost } from './arguments-host.interface.js';
+import { ArgumentsHost } from '@rapidojs/common';
 
 /**
  * Defines the interface for an exception filter.

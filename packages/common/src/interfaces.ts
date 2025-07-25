@@ -34,6 +34,30 @@ export interface ArgumentMetadata {
 }
 
 /**
+ * Provides access to the arguments of a request, specialized for different contexts.
+ */
+export interface ArgumentsHost {
+  /**
+   * Switches the context to an HTTP-specific context.
+   */
+  switchToHttp(): HttpArgumentsHost;
+}
+
+/**
+ * Provides access to the HTTP-specific request and response objects.
+ */
+export interface HttpArgumentsHost {
+  /**
+   * Returns the underlying HTTP request object.
+   */
+  getRequest<T = any>(): T;
+  /**
+   * Returns the underlying HTTP response object.
+   */
+  getResponse<T = any>(): T;
+}
+
+/**
  * Guard interface for route protection
  */
 export interface CanActivate {
@@ -46,24 +70,19 @@ export interface CanActivate {
 }
 
 /**
- * Execution context interface providing access to request/response
- * Uses generic types to avoid specific HTTP framework dependencies
+ * An execution context provides details about the current request,
+ * and extends ArgumentsHost to allow switching to specific contexts like HTTP.
  */
-export interface ExecutionContext<TRequest = any, TResponse = any> {
+export interface ExecutionContext extends ArgumentsHost {
   /**
-   * Get the underlying HTTP request object
+   * Returns the type of the controller class which the current handler belongs to.
    */
-  getRequest<T = TRequest>(): T;
-  
+  getClass<T = any>(): T | null;
+
   /**
-   * Get the underlying HTTP response object
+   * Returns a reference to the handler (method) that will be executed.
    */
-  getResponse<T = TResponse>(): T;
-  
-  /**
-   * Get additional context data
-   */
-  getContext(): any;
+  getHandler(): Function | null;
 }
 
 /**

@@ -1,6 +1,5 @@
 // 从 common 包导入基础类型
 export type {
-  ParamDefinition,
   Type,
   RouteDefinition,
   ModuleType,
@@ -18,7 +17,6 @@ export type {
 // 导出运行时值
 export {
   HttpMethod,
-  ParamType,
   HttpStatus
 } from '@rapidojs/common';
 

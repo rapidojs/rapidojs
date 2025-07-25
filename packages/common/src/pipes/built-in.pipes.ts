@@ -1,4 +1,4 @@
-import { PipeTransform, ArgumentMetadata } from '@rapidojs/common';
+import { PipeTransform, ArgumentMetadata } from '../interfaces.js';
 
 /**
  * Built-in pipe that parses string values to integers
@@ -71,4 +71,4 @@ export class ParseArrayPipe implements PipeTransform<string, any[]> {
     
     return items.map(item => item.trim());
   }
-}
+} 

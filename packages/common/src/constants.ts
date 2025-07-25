@@ -61,4 +61,9 @@ export const INJECT_METADATA_KEY = 'rapido:inject';
 /**
  * 模块元数据键
  */
-export const MODULE_METADATA_KEY = 'rapido:module'; 
+export const MODULE_METADATA_KEY = 'rapido:module';
+
+export const ROUTE_ARGS_METADATA = 'route:args_metadata';
+
+export const GUARDS_METADATA = 'guards';
+export const PUBLIC_ROUTE_METADATA = 'public_route'; 

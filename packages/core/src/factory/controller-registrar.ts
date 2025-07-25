@@ -1,12 +1,12 @@
 import { FastifyInstance } from 'fastify';
-import { METADATA_KEY, CONTROLLER_METADATA, CONTROLLER_PREFIX, ROUTE_METADATA, PARAM_METADATA, BODY_METADATA, QUERY_METADATA, HEADERS_METADATA, PIPE_METADATA } from '../constants.js';
-import { RouteDefinition, ParamDefinition, ParamType, Type } from '../types.js';
+import { METADATA_KEY } from '../constants.js';
+import { RouteDefinition, Type } from '../types.js';
+import { ParamDefinition, ParamType, CanActivate, PipeMetadata, PUBLIC_ROUTE_METADATA, GUARDS_METADATA, MODULE_METADATA_KEY, ROUTE_ARGS_METADATA, ModuleMetadata } from '@rapidojs/common';
 import { DIContainer } from '../di/container.js';
 import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
 import { ValidationPipe } from '../pipes/validation.pipe.js';
-import { PipeMetadata } from '@rapidojs/common';
 import { RapidoApp } from '../interfaces/rapido-app.interface.js';
-
+import { HttpExecutionContextImpl } from '../helpers/execution-context-impl.js';
 
 
 /**
@@ -29,14 +29,15 @@ export class ControllerRegistrar {
   }
 
     private async registerController(controller: Type<any>): Promise<void> {
-    const isController = Reflect.getMetadata(METADATA_KEY.CONTROLLER_PREFIX, controller) !== undefined;
-    if (!isController) {
+    // 使用新的统一元数据系统
+    const moduleMetadata: ModuleMetadata = Reflect.getMetadata(MODULE_METADATA_KEY, controller);
+    if (!moduleMetadata?.prefix) {
       return; // Silently ignore classes without @Controller decorator
     }
         const controllerInstance = await this.container.resolve(controller);
 
-    const prefix = Reflect.getMetadata(METADATA_KEY.CONTROLLER_PREFIX, controller) || '/';
-    const routes: RouteDefinition[] = Reflect.getMetadata(METADATA_KEY.ROUTES, controller);
+    const prefix = moduleMetadata.prefix || '/';
+    const routes: RouteDefinition[] = moduleMetadata.routes || [];
 
     if (!routes || !routes.length) {
       return; // This class might not have any routes defined.
@@ -44,21 +45,17 @@ export class ControllerRegistrar {
 
     for (const route of routes) {
       const fullPath = this.joinPaths(prefix, route.path);
-      const params: ParamDefinition[] = Reflect.getMetadata(METADATA_KEY.PARAMS, controller.prototype, route.methodName) || [];
+      const paramsMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, controller, route.methodName) || {};
+      const params = Object.values(paramsMetadata) as ParamDefinition[];
+      
+      const guardsExecutor = await this.createGuardsExecutor(controller, route.methodName);
 
       const handler = async (request: any, reply: any) => {
         try {
-          // 执行全局守卫
-          if ('executeGlobalGuards' in this.fastify) {
-            const canActivate = await (this.fastify as any).executeGlobalGuards(request, reply);
-            if (!canActivate) {
-              reply.status(403).send({
-                statusCode: 403,
-                error: 'Forbidden',
-                message: 'Access denied by guard'
-              });
-              return;
-            }
+          const canActivate = await guardsExecutor(request, reply);
+          if (!canActivate) {
+            // Guards have already sent the response, so we just return.
+            return;
           }
 
           const args = await this.extractArguments(request, reply, params, controller, route.methodName);
@@ -78,6 +75,58 @@ export class ControllerRegistrar {
         console.warn(`Unsupported HTTP method: ${route.method} for path ${fullPath}`);
       }
     }
+  }
+
+  private async createGuardsExecutor(
+    controller: Type<any>,
+    methodName: string | symbol
+  ): Promise<(request: any, reply: any) => Promise<boolean>> {
+    const isPublic = Reflect.getMetadata(PUBLIC_ROUTE_METADATA, (controller.prototype as any)[methodName]);
+    if (isPublic) {
+      return async () => true;
+    }
+
+    const classGuards = Reflect.getMetadata(GUARDS_METADATA, controller) || [];
+    const methodGuards = Reflect.getMetadata(GUARDS_METADATA, (controller.prototype as any)[methodName]) || [];
+    
+    const guards = [...classGuards, ...methodGuards];
+
+    return async (request: any, reply: any): Promise<boolean> => {
+      // 首先执行全局守卫
+      if ('executeGlobalGuards' in this.fastify) {
+        const globalCanActivate = await (this.fastify as any).executeGlobalGuards(request, reply);
+        if (!globalCanActivate) {
+          reply.status(403).send({
+            statusCode: 403,
+            error: 'Forbidden',
+            message: 'Access denied by guard'
+          });
+          return false;
+        }
+      }
+
+      // 然后执行控制器和方法级别的守卫
+      if (guards.length === 0) {
+        return true;
+      }
+
+      const context = new HttpExecutionContextImpl(request, reply, controller, (controller.prototype as any)[methodName]);
+
+      for (const guard of guards) {
+        const guardInstance = (await this.container.resolve(guard)) as CanActivate;
+        const canActivateResult = await guardInstance.canActivate(context);
+
+        if (!canActivateResult) {
+          reply.status(403).send({
+            statusCode: 403,
+            error: 'Forbidden',
+            message: 'Access denied by guard'
+          });
+          return false;
+        }
+      }
+      return true;
+    };
   }
 
   private joinPaths(prefix: string, path: string): string {
@@ -100,10 +149,11 @@ export class ControllerRegistrar {
 
     private async extractArguments(request: any, reply: any, params: ParamDefinition[], controller: Type<any>, methodName: string | symbol): Promise<any[]> {
     if (!params.length) {
-      return [request, reply];
+      return [];
     }
 
-    const args = [];
+    const args = new Array(params.length);
+    const context = new HttpExecutionContextImpl(request, reply, controller, (controller.prototype as any)[methodName]);
     
     // Get method-level and class-level pipes
     const methodPipes: PipeMetadata[] = Reflect.getMetadata(METADATA_KEY.PIPES, controller.prototype, methodName) || [];
@@ -111,61 +161,20 @@ export class ControllerRegistrar {
     const paramPipes = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, controller.prototype, methodName) || {};
     
     for (const param of params.sort((a, b) => a.index - b.index)) {
-      switch (param.type) {
-        case ParamType.REQUEST:
-          args[param.index] = request;
-          break;
-        case ParamType.RESPONSE:
-          args[param.index] = reply;
-          break;
-        case ParamType.BODY:
-          let bodyValue = request.body;
-          const bodyMetatype = this.getParamType(controller.prototype, methodName, param.index);
-          const bodyEffectivePipes = this.getEffectivePipes(bodyMetatype, classPipes, methodPipes, paramPipes[param.index] || []);
-          bodyValue = await this.applyPipes(bodyValue, {
-            type: 'body',
-            data: param.key,
-            metatype: bodyMetatype
-          }, bodyEffectivePipes);
-          args[param.index] = bodyValue;
-          break;
-        case ParamType.QUERY:
-          let queryValue = param.key ? request.query[param.key] : request.query;
-          const queryMetatype = this.getParamType(controller.prototype, methodName, param.index);
-          const queryEffectivePipes = this.getEffectivePipes(queryMetatype, classPipes, methodPipes, paramPipes[param.index] || []);
-          queryValue = await this.applyPipes(queryValue, {
-            type: 'query',
-            data: param.key,
-            metatype: queryMetatype
-          }, queryEffectivePipes);
-          args[param.index] = queryValue;
-          break;
-        case ParamType.PARAM:
-          let paramValue = param.key ? request.params[param.key] : request.params;
-          const paramMetatype = this.getParamType(controller.prototype, methodName, param.index);
-          const paramEffectivePipes = this.getEffectivePipes(paramMetatype, classPipes, methodPipes, paramPipes[param.index] || []);
-          paramValue = await this.applyPipes(paramValue, {
-            type: 'param',
-            data: param.key,
-            metatype: paramMetatype
-          }, paramEffectivePipes);
-          args[param.index] = paramValue;
-          break;
-        case ParamType.HEADERS:
-          let headersValue = param.key ? request.headers[param.key] : request.headers;
-          const headersMetatype = this.getParamType(controller.prototype, methodName, param.index);
-          const headersEffectivePipes = this.getEffectivePipes(headersMetatype, classPipes, methodPipes, paramPipes[param.index] || []);
-          headersValue = await this.applyPipes(headersValue, {
-            type: 'headers',
-            data: param.key,
-            metatype: headersMetatype
-          }, headersEffectivePipes);
-          args[param.index] = headersValue;
-          break;
-        default:
-          args[param.index] = undefined;
-          break;
-      }
+      if (!param.factory) continue; // Should not happen with the new decorator implementation
+      
+      let result = await param.factory(param.data, context);
+      
+      const metatype = this.getParamType(controller.prototype, methodName, param.index);
+      const effectivePipes = this.getEffectivePipes(metatype, classPipes, methodPipes, paramPipes[param.index] || []);
+      
+      result = await this.applyPipes(result, {
+        type: param.type as any, // TODO: Fix this any
+        data: param.data,
+        metatype: metatype
+      }, effectivePipes);
+      
+      args[param.index] = result;
     }
     return args;
   }

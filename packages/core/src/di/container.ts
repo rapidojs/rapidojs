@@ -6,50 +6,49 @@ import { ForwardReference } from '@rapidojs/common';
 import { isForwardReference } from './forward-ref.js';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
 import { INJECT_METADATA_KEY, MODULE_METADATA_KEY } from '../constants.js';
+import { MODULE_METADATA } from '../constants.js';
+import { HttpException } from '../exceptions/http-exception.js';
+import { isDynamicModule } from '../utils/module.utils.js';
+import { ModuleType } from '../types.js';
+import { Provider } from '../types.js';
 
 export class DIContainer {
-  private instances: Map<Type<any>, any> = new Map();
-  private providerRegistry: Map<Type<any>, Type<any>> = new Map();
-  private modules: Set<Type<any>> = new Set();
-  private isResolving: Set<Type<any>> = new Set();
+  private readonly providers = new Map<any, any>();
+  private readonly instances = new Map<any, any>();
+  private readonly modules = new Set<ModuleType>();
+  private readonly isResolving = new Set<any>();
   private exceptionFilters: Map<Type<Error>, Type<ExceptionFilter>> = new Map();
 
-  public async registerModule(module: Type<any> | ForwardReference<any>) {
-    const actualModule = this.getInjectionToken(module);
+  public async registerModule(module: ModuleType): Promise<void> {
+    if (this.modules.has(module)) return;
+    this.modules.add(module);
 
-    if (this.modules.has(actualModule)) {
+    if (isDynamicModule(module)) {
+      if (module.imports) {
+        for (const imported of module.imports) await this.registerModule(imported);
+      }
+      if (module.providers) {
+        for (const provider of module.providers) this.registerProvider(provider);
+      }
       return;
     }
-    this.modules.add(actualModule);
 
-    const metadata: ModuleMetadata = Reflect.getMetadata(MODULE_METADATA_KEY, actualModule);
-    if (!metadata) {
-      return;
+    const resolvedModule = 'forwardRef' in module ? module() : module;
+    const metadata = Reflect.getMetadata(MODULE_METADATA_KEY, resolvedModule);
+
+    if (metadata?.imports) {
+      for (const imported of metadata.imports) await this.registerModule(imported);
     }
-
-    if (metadata.imports) {
-      for (const importedModule of metadata.imports) {
-        await this.registerModule(importedModule);
-      }
+    if (metadata?.providers) {
+      for (const provider of metadata.providers) this.registerProvider(provider);
     }
+  }
 
-    if (metadata.providers) {
-      for (const provider of metadata.providers) {
-        if (typeof provider === 'function') {
-          // It's a class provider
-          this.providerRegistry.set(provider, actualModule);
-          const filterMetadata = Reflect.getMetadata(EXCEPTION_FILTER_METADATA, provider);
-          if (filterMetadata && Array.isArray(filterMetadata)) {
-            for (const exceptionType of filterMetadata) {
-              this.exceptionFilters.set(exceptionType, provider as Type<ExceptionFilter>);
-            }
-          }
-        } else {
-          // It's a value provider
-          const { provide, useValue } = provider;
-          this.instances.set(provide, useValue);
-        }
-      }
+  public registerProvider(provider: Provider): void {
+    if (typeof provider === 'function') {
+      this.providers.set(provider, { useClass: provider });
+    } else {
+      this.providers.set(provider.provide, provider);
     }
   }
 
@@ -62,21 +61,57 @@ export class DIContainer {
   }
 
   public async resolve<T>(target: Type<T> | ForwardReference<T>): Promise<T> {
+    // 处理 undefined 或 null 的情况
+    if (!target) {
+      throw new Error('无法解析空的依赖目标');
+    }
+
     const actualTarget = this.getInjectionToken(target);
+
+    // 如果是字符串令牌，检查是否已注册为值提供者
+    if (typeof actualTarget === 'string') {
+      if (!this.providers.has(actualTarget)) {
+        throw new Error(`未找到令牌 '${actualTarget}' 的提供者`);
+      }
+      const provider = this.providers.get(actualTarget);
+      if (provider.useValue !== undefined) {
+        return provider.useValue;
+      }
+      throw new Error(`令牌 '${actualTarget}' 不是值提供者`);
+    }
+
+    // 检查是否是一个有效的类/构造函数
+    if (!actualTarget || typeof actualTarget !== 'function') {
+      throw new Error(`无法解析非构造函数类型: ${actualTarget}`);
+    }
 
     if (this.instances.has(actualTarget)) {
       return this.instances.get(actualTarget) as T;
     }
 
+    // 检测循环依赖，但对于已经创建临时实例的情况允许继续
+    if (this.isResolving.has(actualTarget)) {
+      // 如果已经有临时实例，返回它
+      if (this.instances.has(actualTarget)) {
+        return this.instances.get(actualTarget) as T;
+      }
+      // 否则抛出循环依赖错误
+      throw new Error(`检测到循环依赖: ${actualTarget.name} 正在被解析中`);
+    }
+
     const isController = Reflect.getMetadata(CONTROLLER_METADATA, actualTarget) !== undefined;
 
-    if (!this.providerRegistry.has(actualTarget)) {
+    if (!this.providers.has(actualTarget)) {
       // If the token is not a registered provider, it might be a controller
       // or a class that doesn't need to be explicitly registered. We can
       // treat it as a transient provider.
-      this.providerRegistry.set(actualTarget, actualTarget);
+      this.providers.set(actualTarget, actualTarget);
     }
 
+    // 标记正在解析
+    this.isResolving.add(actualTarget);
+    
+    // 创建临时实例来处理循环依赖
     const tempInstance = Object.create(actualTarget.prototype);
     this.instances.set(actualTarget, tempInstance);
 
@@ -90,15 +125,28 @@ export class DIContainer {
           if (customToken !== undefined) {
             return this.resolve(customToken);
           }
+          // 如果 paramType 是 undefined 或基础类型，跳过解析
+          if (!paramType || typeof paramType !== 'function') {
+            return undefined;
+          }
           return this.resolve(paramType);
         }),
       );
 
       const instance = new actualTarget(...injections);
-      this.instances.set(actualTarget, instance);
-      return instance;
+      
+      // 复制临时实例的原型，然后用真实实例替换
+      Object.setPrototypeOf(tempInstance, actualTarget.prototype);
+      Object.assign(tempInstance, instance);
+      
+      // 解析完成，移除标记
+      this.isResolving.delete(actualTarget);
+      
+      return tempInstance as T;
     } catch (error) {
       this.instances.delete(actualTarget);
+      // 解析失败时也要移除标记
+      this.isResolving.delete(actualTarget);
       throw error;
     }
   }
@@ -107,26 +155,35 @@ export class DIContainer {
     return this.getAllControllers(module, new Set());
   }
 
-  private getAllControllers(module: Type<any> | ForwardReference<any>, visited: Set<Type<any>>): Type<any>[] {
-    const actualModule = this.getInjectionToken(module);
-
-    if (visited.has(actualModule)) {
+  public getAllControllers(module: ModuleType, visited = new Set<ModuleType>()): Type<any>[] {
+    if (visited.has(module)) {
       return [];
     }
-    visited.add(actualModule);
+    visited.add(module);
 
-    const metadata: ModuleMetadata = Reflect.getMetadata(MODULE_METADATA_KEY, actualModule);
+    if (isDynamicModule(module)) {
+      let controllers = module.controllers || [];
+      if (module.imports) {
+        for (const imported of module.imports) {
+          controllers.push(...this.getAllControllers(imported, visited));
+        }
+      }
+      return controllers;
+    }
+
+    const resolvedModule = 'forwardRef' in module ? module() : module;
+    const metadata = Reflect.getMetadata(MODULE_METADATA_KEY, resolvedModule);
+
     if (!metadata) {
       return [];
     }
-    let controllers = metadata.controllers || [];
 
+    let controllers = metadata.controllers || [];
     if (metadata.imports) {
-      for (const importedModule of metadata.imports) {
-        controllers = [...controllers, ...this.getAllControllers(importedModule, visited)];
+      for (const imported of metadata.imports) {
+        controllers.push(...this.getAllControllers(imported, visited));
       }
     }
-
     return controllers;
   }
 
