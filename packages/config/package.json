@@ -31,6 +31,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@rapidojs/common": "workspace:*",
     "@rapidojs/core": "workspace:*",
     "dotenv": "^16.4.5",
     "js-yaml": "^4.1.0",

@@ -180,6 +180,9 @@ importers:
 
   packages/config:
     dependencies:
+      '@rapidojs/common':
+        specifier: workspace:*
+        version: link:../common
       '@rapidojs/core':
         specifier: workspace:*
         version: link:../core

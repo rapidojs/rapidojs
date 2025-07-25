@@ -1,7 +1,6 @@
-import { Controller, Get } from '@rapidojs/core';
-import { LoggerService } from '@rapidojs/common';
+import { Controller, Get, LoggerService } from '@rapidojs/common';
 
-@Controller()
+@Controller('/')
 export class AppController {
   private readonly logger = new LoggerService(AppController);
 
