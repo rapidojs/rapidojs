@@ -1,7 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import 'reflect-metadata';
-import { Injectable } from '../decorators/index.js';
-import { Controller } from '../decorators/index.js';
+import { describe, it, expect } from 'vitest';
+import { Injectable, Controller } from '@rapidojs/common';
 import { METADATA_KEY } from '../constants.js';
 
 @Injectable()

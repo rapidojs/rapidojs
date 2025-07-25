@@ -3,9 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fastify, { FastifyInstance } from 'fastify';
 import { DIContainer } from '../di/container.js';
 import { ControllerRegistrar } from '../factory/controller-registrar.js';
-import { Controller } from '../decorators/index.js';
-import { Get, Post } from '../decorators/index.js';
-import { Query, Param, Body } from '../decorators/index.js';
+import { Controller, Get, Post, Query, Param, Body } from '@rapidojs/common';
 
 describe('ControllerRegistrar', () => {
   let app: FastifyInstance;

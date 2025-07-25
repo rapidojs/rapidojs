@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { describe, it, expect } from 'vitest';
-import { Query, Param, Body, Headers, Req, Res } from '../decorators/index.js';
+import { Query, Param, Body, Headers, Req, Res } from '@rapidojs/common';
 import { METADATA_KEY } from '../constants.js';
-import { ParamType } from '../types.js';
+import { ParamType } from '@rapidojs/common';
 import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
 import { ParseIntPipe } from '../pipes/built-in.pipes.js';
 

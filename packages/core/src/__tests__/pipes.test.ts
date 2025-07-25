@@ -8,7 +8,7 @@ import {
   ParseArrayPipe 
 } from '../pipes/built-in.pipes.js';
 import { ValidationPipe, ValidationException } from '../pipes/validation.pipe.js';
-import { ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
+import { ArgumentMetadata } from '@rapidojs/common';
 import { IsEmail, IsNotEmpty, IsOptional, IsInt, Min, Max } from 'class-validator';
 
 // 测试用的 DTO 类

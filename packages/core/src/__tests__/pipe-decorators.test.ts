@@ -5,8 +5,7 @@ import {
   QueryWithPipe,
   ParamWithPipe,
   BodyWithPipe
-} from '../decorators/index.js';
-import { PipeMetadata } from '@rapidojs/common';
+} from '@rapidojs/common';
 import { METADATA_KEY } from '../constants.js';
 import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
 import {

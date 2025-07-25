@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { HttpStatus } from '../enums/http-status.enum.js';
+import { HttpStatus } from '@rapidojs/common';
 
 describe('HTTP 状态枚举', () => {
   describe('信息响应 (1xx)', () => {

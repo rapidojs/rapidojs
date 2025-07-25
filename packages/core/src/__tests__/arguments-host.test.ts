@@ -343,7 +343,7 @@ describe('ArgumentsHost', () => {
        const request = createMockRequest({ query: largeQuery });
        const host = new HttpArgumentsHostImpl(request, mockReply);
        
-       expect(Object.keys(host.getRequest().query)).toHaveLength(100);
+       expect(Object.keys(host.getRequest().query as Record<string, string>)).toHaveLength(100);
        expect((host.getRequest().query as Record<string, string>)['param50']).toBe('value50');
      });
 

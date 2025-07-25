@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { describe, it, expect } from 'vitest';
 import { ParseIntPipe, ParseBoolPipe, ParseArrayPipe } from '../pipes/built-in.pipes.js';
-import { Param, Query } from '../decorators/index.js';
+import { Param, Query } from '@rapidojs/common';
 import { METADATA_KEY } from '../constants.js';
 
 // 测试用的控制器类

@@ -1,11 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { RapidoFactory } from '../factory/rapido.factory.js';
-import { Controller, Get, Post, Body, Injectable, Module, Catch } from '../decorators/index.js';
+import { Controller, Get, Post, Body, Injectable, Module, Catch } from '@rapidojs/common';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
-import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
-import { CanActivate, ExecutionContext } from '../interfaces/rapido-app.interface.js';
+import { PipeTransform, ArgumentMetadata, CanActivate, ExecutionContext } from '@rapidojs/common';
 import { ArgumentsHost } from '../interfaces/arguments-host.interface.js';
-import { Type } from '../types.js';
 
 // 测试用的全局过滤器
 @Catch(Error)

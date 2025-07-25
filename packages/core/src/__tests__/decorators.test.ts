@@ -1,9 +1,7 @@
 import 'reflect-metadata';
 import { describe, it, expect } from 'vitest';
 import { METADATA_KEY } from '../constants.js';
-import { Controller } from '../decorators/index.js';
-import { Get, Post, Put, Delete } from '../decorators/index.js';
-import { Query, Param, Body, Headers, Req, Res } from '../decorators/index.js';
+import { Controller, Get, Post, Put, Delete, Query, Param, Body, Headers, Req, Res } from '@rapidojs/common';
 import { RouteDefinition, ParamDefinition, ParamType } from '../types.js';
 
 describe('Decorators Metadata', () => {
