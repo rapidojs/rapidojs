@@ -1,134 +1,219 @@
-### **Rapido.js 开发规划蓝图 (2025年7月版)**
+# Rapido.JS 开发路线图
 
-> 📋 **最新更新** (Phase 5 进展): 测试覆盖率从 84.76% 大幅提升至 89.22%，新增 112 个测试用例，显著增强了代码质量和可靠性。
+## v1.1.0 "武库" (The Arsenal)
 
-#### **1. 项目愿景 (Vision Statement)**
+* **文档版本**: `v2.0` (采用标准规划模板)
+* **更新日期**: 2025年7月25日
 
-为 Fastify 打造一个极致轻量、拥有顶级开发体验的声明式 API 框架。`Rapido.js` 旨在赋能开发者，让他们能够以最高的效率和最优雅的方式，构建出高性能、高可维护性的 RESTful API。这是一个 esm 风格的项目。
+### **第一部分: 项目核心目标与价值**
 
-#### **2. 核心哲学 (Core Philosophy)**
+`Rapido.js` 致力于成为 Fastify 生态中，为开发者提供极致轻量、拥有顶级开发体验的声明式 API 框架。我们始终坚持以下核心哲学：
 
-* **Fastify 原生, 拥抱而非抽象**: 我们不隐藏 Fastify 的强大功能。`request`, `reply` 对象、Schema 验证、Hooks 等都应易于访问，让熟悉 Fastify 的开发者感到宾至如归。
-* **API 优先, 专注核心**: 框架的核心只包含构建 API 所需的一切。无视图层，无 SSR，保持极致的专注和性能。
-* **依赖注入, 结构清晰**: 以 `tsyringe` 为核心，提供稳定、高效的依赖注入，构建可测试、可维护的应用结构。
-* **声明式编程, 体验至上**: 通过装饰器最大化地简化代码，让业务逻辑成为代码的唯一主角。
-
-#### **3. 核心技术栈 (Core Technology Stack)**
-
-* **运行时**: Node.js 22.x+
-* **引擎**: Fastify 5.4.x
-* **语言**: TypeScript 5.x
-* **依赖注入**: `tsyringe`
-* **元数据**: `reflect-metadata`
-* **验证 (对等依赖)**: `class-validator`, `class-transformer`
-* **测试**: `vitest`
-* **包管理**: `pnpm` (推荐使用 workspaces 进行 monorepo 管理)
+* **Fastify 原生, 拥抱而非抽象**: 充分利用并易于访问 Fastify 的原生功能。
+* **API 优先, 专注核心**: 框架核心只包含构建高性能 RESTful API 所需的一切。
+* **依赖注入, 结构清晰**: 以 `tsyringe` 为核心，构建可测试、可维护的应用。
+* **声明式编程, 体验至上**: 通过装饰器简化代码，让业务逻辑成为主角。
 
 ---
 
-### **4. 开发路线图 (The Development Roadmap)**
+### **第二部分: 当前状态与已完成的核心能力 (截至 v1.0.0)**
 
-我们将开发分为五个主要阶段，目标是在 2026 年第一季度发布稳定的 `v1.0.0` 版本。
+v1.0.0 版本已成功发布，为框架奠定了坚实的基础，使其成为一个功能完整、可用于生产的框架。
 
-#### **Phase 1: v0.1 - The Foundation (地基) | Q3 2025 (7月 - 8月)**
+#### **已完成的核心能力:**
 
-**目标**: 搭建框架最核心的骨架，实现路由和 DI 的基本功能。
+* **核心引擎 (`@rapidojs/core`)**: 实现了基于装饰器的路由、以 `tsyringe` 为核心的依赖注入、模块化系统 (`@Module`) 以及 `RapidoFactory` 核心启动器。
+* **请求管道 (`Pipeline`)**: 提供了完整的请求参数处理和数据验证流程，包括参数装饰器 (`@Body`, `@Query` 等)和强大的管道机制 (`PipeTransform`, `@UsePipes`, 参数级管道)。
+* **韧性与健壮性 (`Resilience`)**: 内置了全局异常过滤器 (`@Catch`) 和基础的 `HttpException` 类，并提供了企业级的配置管理模块 (`@rapidojs/config`)，支持多源加载和启动时校验。
+* **开发者体验 (`Developer Experience`)**: 推出了 `@rapidojs/cli` 命令行工具，支持通过 `rapido new` 命令一键生成项目骨架。
 
-* **任务 1: 项目初始化**
-    * [x] 使用 `pnpm workspaces` 设置 monorepo 结构 (`packages/core`, `packages/cli` 等)。
-    * [x] 配置 `TypeScript`, `ESLint`, `Prettier` 以保证代码质量。
-    * [x] 配置 `Vitest` 用于单元测试和集成测试。
-* **任务 2: `@rapidojs/core` 核心包**
-    * [x] **依赖注入集成**: 引入 `tsyringe`，并建立 `container` 的管理机制。
-    * [x] **路由装饰器**: 实现 `@Controller`, `@Get`, `@Post`, `@Put`, `@Delete`, `@Patch`。
-    * [x] **核心工厂 `RapidoFactory`**: 实现 `create()` 方法，作为框架的统一入口。
-    * [x] **核心注册器 `ControllerRegistrar`**: 实现扫描控制器、读取元数据并注册到 Fastify 实例的逻辑。
-* **里程碑**: 能够运行一个最简单的、带有一个路由的 Controller，并成功返回 "Hello World"。
+#### **当前质量指标:**
 
-#### **Phase 2: v0.2 - The Pipeline (管道) | Q3 2025 (9月)**
-
-**目标**: 实现完整的请求参数处理和数据验证流程。
-
-* **任务 1: 参数装饰器**
-    * [x] 实现 `@Param(key)`, `@Query(key)`, `@Body()`, `@Headers(key)` 等装饰器。
-    * [x] 扩展 `ControllerRegistrar` 以解析参数元数据，并动态地将请求数据注入到控制器方法中。
-    * [x] 完善 `ControllerRegistrar` 中的包裹处理函数，实现参数的动态解析和注入。
-* **任务 2: 管道 (Pipes) 机制**
-    * [x] 定义 `PipeTransform` 接口。
-    * [x] 实现一个内置的 `ValidationPipe`，集成 `class-validator` 和 `class-transformer`，支持 DTO 验证和自动类型转换。
-    * [x] 实现 `@UsePipes()` 装饰器（用于方法或控制器级别）和全局管道注册的能力。
-    * [x] **NestJS 风格管道**: 实现参数级管道支持 `@Param('id', ParseIntPipe)`，自动 DTO 检测和验证。
-    * [x] **智能管道系统**: 基于类名模式和元数据自动应用 ValidationPipe，无需手动声明。
-* **任务 3: 模块化架构**
-    * [x] **模块系统**: 实现 `@Module()` 装饰器，支持模块化应用架构。
-    * [x] **依赖注入增强**: 
-        * [x] 完善 DIContainer 支持模块间依赖注入
-        * [x] 实现循环依赖检测和 `forwardRef` 机制
-        * [x] 完善循环依赖测试套件和文档
-    * [x] **多模块示例**: 创建 UserModule、ProductModule、AuthModule 完整示例。
-* **任务 4: 静态文件服务**
-    * [x] **RapidoFactory 配置**: 增强 `RapidoFactory.create()` 支持应用配置选项。
-    * [x] **静态文件集成**: 集成 `@fastify/static` 插件，提供声明式静态文件服务配置。
-    * [x] **AppConfig 接口**: 定义标准化的应用配置接口，支持静态文件和 Fastify 选项。
-* **里程碑**: 开发者可以通过 DTO 和 `@Body()` 装饰器实现请求体验证，无效请求会自动返回 400 错误。现在开发者可以使用 DTO 和类似于 NestJS 的管道机制，实现请求参数的自动验证和转换。**框架现已支持完整的模块化架构，可构建大型、可维护的企业级应用。**
-
-#### **Phase 3: v0.3 - The Resilience (韧性) | Q4 2025 (10月 - 11月)**
-
-**目标**: 增强框架的健壮性和可配置性。
-
-* **任务 1: 异常处理**
-    * [x] 定义一个基础的 `HttpException` 类。
-    * [x] 实现全局异常过滤器，使用 Fastify 的 `setErrorHandler` 捕获所有未处理的异常，并返回标准化的 JSON 错误响应。
-    * [x] 实现 `@Catch()` 装饰器，允许用户自定义特定异常类型的过滤器。
-* **任务 2: `@rapidojs/config` 配置模块**
-    * [x] 创建一个新的包 `@rapidojs/config`。
-    * [x] 实现一个可注入的 `ConfigService`，用于安全地读取和访问 `.env` 文件中的环境变量。`.env`文件仅用于配置真正的配置文件路径。真正的配置文件使用 YAML 格式书写。你需要支持 `.env` 和 `.env.local` 文件同时存在的情况。
-    * [x] 实现 `ConfigModule.forRoot()` 静态方法，支持类似 NestJS 的模块配置方式。
-    * [x] 创建 `@ConfigProperty` 装饰器，支持属性级别的配置注入。
-    * [x] 支持 YAML/JSON 配置文件，自定义配置加载器，配置验证等高级功能。
-    * [x] 完整的测试覆盖和文档，在示例应用中集成展示用法。
-* **里程碑**: 框架能够优雅地处理业务和意外错误，并且应用配置完全解耦。**配置模块已完成，提供了企业级的配置管理能力。**
-
-#### **Phase 4: v0.4 - The Experience (体验) | Q4 2025 (12月)** ✅
-
-**目标**: 打造一流的开发者工具，降低上手门槛。
-
-* **任务 1: `@rapidojs/cli` 命令行工具**
-    * [x] 使用 `commander.js` 初始化 CLI 项目。
-    * [x] 实现 `rapido new <project-name>` 命令，用于一键生成包含所有最佳实践的项目骨架。
-    * [x] CLI 基础架构 - 支持命令行参数解析、帮助信息、版本显示。
-    * [x] 项目模板生成 - 包含完整的 TypeScript 配置、构建脚本、示例模块。
-* **里程碑**: ✅ **新用户可以在 1 分钟内创建并运行一个 `Rapido.js` 项目。** CLI 工具已实现核心功能，支持快速项目生成，包含用户模块示例和最佳实践配置。
-
-#### **Phase 5: v1.0.0 - The Launch (发布) | Q1 2026** 🚧
-
-**目标**: 稳定 API，完善文档，正式向世界发布。
-
-**当前进展**: API 冻结与测试阶段进行中，测试覆盖率已显著提升至 89.22%
-
-* **任务 1: API 冻结与测试**
-    * [x] 对所有公开 API 进行审查，确保其稳定性和易用性。
-    * [x] ✅ **测试覆盖率大幅提升**: 从 84.76% 提升到 89.22%，新增 112 个测试用例
-        - ✅ HTTP 状态枚举测试 (56 个测试用例，100% 覆盖率)
-        - ✅ ArgumentsHost 完整测试 (25 个测试用例，100% 覆盖率)  
-        - ✅ 验证管道边界情况测试 (31 个测试用例，98.07% 覆盖率)
-        - ✅ 修复 Vitest 覆盖率配置问题
-        - 📋 剩余未达到 95% 主要是复杂的私有方法和错误处理分支
-* **任务 2: 文档**
-    * [ ] 搭建官方文档网站（使用 VitePress 或 Docusaurus）。
-    * [ ] 撰写核心概念、入门指南、高级专题（如自定义装饰器、Pipes）等所有章节。
-* **任务 3: 示例项目**
-    * [ ] 创建 2-3 个完整的示例项目（如 TODO API, JWT 认证 API）并开源。
-* **任务 4: 正式发布**
-    * [ ] 将所有 `@rapidojs/*` 包以 `1.0.0` 版本发布到 npm。
-    * [ ] 在相关社区（如 a.Node.js、Fastify）进行宣发。
+* **API 状态**: v1.0.0 的公开 API 已冻结，保证向后兼容。
+* **测试覆盖率**: 整体代码测试覆盖率已达到 **89.22%**。
 
 ---
 
-### **5. 未来展望 (v2.0 and Beyond)**
+### **第三部分: v1.1.0 "武库" (The Arsenal) 版本规划**
 
-* **高级模块功能**: 增强模块系统，支持懒加载、动态模块、模块热重载等高级特性。
-* **微服务支持**: 提供对 NATS、gRPC 或其他消息队列的适配器。
-* **高级功能**: 探索对 GraphQL (Mercurius) 的集成方案。
-* **性能分析**: 提供内置工具或指南，帮助开发者分析和优化 `Rapido.js` 应用的性能。
-* **企业级特性**: 支持分布式追踪、监控集成、健康检查等企业级功能。
+#### **版本目标**
+
+将 `Rapido.js` 从一个强大的核心框架转变为一个**“开箱即用”的开发平台**。本版本以“武库”(The Arsenal)为主题，为开发者提供一套官方的、高质量的、即插即用的模块。
+
+#### **核心交付成果**
+
+1.  `@rapidojs/auth`: 官方认证与授权模块。
+2.  核心与通用模块增强: 拦截器、生命周期钩子与健康检查。
+3.  `@rapidojs/schedule`: 官方任务调度模块。
+4.  `@rapidojs/cli` 功能升级: 提供更强大的项目管理能力。
+
+#### **详细功能清单 (Checklist)**
+
+##### **1. `@rapidojs/auth` - 认证与授权模块**
+
+* **功能描述**: 解决 API 安全的基石。提供一个声明式的、可扩展的机制来保护 API 端点，内置对 JWT 的支持。
+* **最终成果**:
+    * 一个可发布的 NPM 包：`@rapidojs/auth`。
+    * 核心装饰器：`@UseGuards()`。
+    * 核心接口：`CanActivate`。
+    * 一个可扩展的认证策略模式 (AuthStrategy 接口)。
+    * 开箱即用的守卫：`JwtAuthGuard`（基于 `JwtStrategy`）。
+    * 辅助装饰器：`@Public()`（标记公开路由），`@CurrentUser()`（参数装饰器，注入用户信息）。
+* **关键实现路径**:
+    * [ ] **定义核心接口**: 在 `@rapidojs/common` 中定义 `ExecutionContext`、`CanActivate` 等核心接口。
+    * [ ] **增强核心注册器**: 修改 `@rapidojs/core` 的路由注册器，使其支持并执行守卫逻辑。
+    * [ ] **设计并实现 Strategy 模式**: 定义通用的 AuthStrategy 接口，并重构 JwtAuthGuard 以使用 JwtStrategy，为未来的 OAuth2 等策略铺平道路。
+    * [ ] **开发 `@rapidojs/auth` 包**: 集成并封装 `@fastify/jwt`，并实现 `JwtAuthGuard` 和相关装饰器。
+    * [ ] **编写测试**: 针对守卫的执行顺序、`@Public` 的豁免能力、`@CurrentUser` 的注入能力编写完整的单元和集成测试。
+
+##### **2. 核心与通用模块增强**
+
+* **功能描述**: 提供强大的 AOP（面向切面编程）能力和生产环境所需的可靠性特性。
+* **最终成果**:
+    * AOP 装饰器：`@UseInterceptors()`。
+    * AOP 核心接口：`Interceptor`, `CallHandler`。
+    * 内置拦截器：`TransformInterceptor`（统一响应格式），`LoggingInterceptor`（开发日志）。
+    * 辅助装饰器：`@NoTransform()`，用于在全局拦截器下跳过特定路由的响应转换。
+    * 生命周期接口：`OnApplicationBootstrap`, `BeforeApplicationShutdown` 等。
+    * 一个内置的、可配置的 `/health` 健康检查端点。
+* **关键实现路径**:
+    * [ ] **实现拦截器逻辑**: 修改核心注册器的包裹处理函数，将其改造为支持 `next()` 模式的调用链。
+    * [ ] **实现内置拦截器**: 创建 `TransformInterceptor` 和 `LoggingInterceptor` 作为通用工具。
+    * [ ] **实现 @NoTransform() 装饰器**: 为 `TransformInterceptor` 增加元数据检查逻辑，使其可以被 `@NoTransform()` 豁免。
+    * [ ] **实现生命周期钩子**: 在 `RapidoFactory` 的启动和关闭流程中，增加对生命周期钩子的扫描和执行。
+    * [ ] **实现健康检查**: 在核心中增加可配置的健康检查模块。
+
+##### **3. `@rapidojs/schedule` - 任务调度模块**
+
+* **功能描述**: 为应用提供简单的、声明式的后台任务和定时任务能力。
+* **最终成果**:
+    * 一个可发布的 NPM 包：`@rapidojs/schedule`。
+    * 任务调度装饰器：`@Cron()`, `@Interval()`, `@Timeout()`。
+* **关键实现路径**:
+    * [ ] **技术选型**: 选择并集成一个轻量的底层调度库（如 `node-cron`）。
+    * [ ] **创建 `SchedulerService`**: 创建一个由 DI 容器管理的单例服务。
+    * [ ] **实现元数据扫描**: 在应用启动时，`SchedulerService` 扫描所有 Provider，查找并注册带有调度装饰器的方法。
+    * [ ] **注册与注销任务**: 通过生命周期钩子，确保任务在应用启动时被注册，并在应用关闭时被安全地停止。
+
+##### **4. `@rapidojs/cli` 功能升级**
+
+* **功能描述**: 提升 CLI 的智能化和便利性，使其成为管理 `Rapido.js` 生态的核心工具。
+* **最终成果**:
+    * 新增 `rapido add <package-name>` 命令。
+    * `rapido g` 命令支持新的构建块（`guard`, `interceptor`）。
+* **关键实现路径**:
+    * [ ] **实现 `add` 命令**: 设计 `add` 命令的逻辑，使其能修改 `package.json`、运行安装，并有能力执行简单的代码注入（例如，在 `app.module.ts` 中 `import` 新模块）。
+    * [ ] **更新生成器**: 为 `rapido g` 命令添加 `guard` 和 `interceptor` 的代码模板。
+
+## v1.2.0 "数据引擎" (The Data Engine)
+
+### **第一部分: 项目核心目标与价值**
+
+`Rapido.js` 致力于成为 Fastify 生态中，为开发者提供极致轻量、拥有顶级开发体验的声明式 API 框架。我们始终坚持以下核心哲学：
+
+* **Fastify 原生, 拥抱而非抽象**: 充分利用并易于访问 Fastify 的原生功能。
+* **API 优先, 专注核心**: 框架核心只包含构建高性能 RESTful API 所需的一切。
+* **依赖注入, 结构清晰**: 以 `tsyringe` 为核心，构建可测试、可维护的应用。
+* **声明式编程, 体验至上**: 通过装饰器简化代码，让业务逻辑成为主角。
+
+---
+
+### **第二部分: 当前状态与已完成的核心能力 (截至 v1.1.0)**
+
+v1.1.0 版本已成功交付“武库”(The Arsenal)，为框架配备了一套官方的、开箱即用的模块，极大地提升了开发效率和安全性。
+
+#### **已完成的核心能力:**
+
+* **核心引擎 (`@rapidojs/core`)**: 实现了基于装饰器的路由、依赖注入、模块化系统。
+* **请求管道 (`Pipeline`)**: 提供了强大的请求参数处理和数据验证流程。
+* **韧性与健壮性 (`Resilience`)**: 内置了全局异常过滤器和企业级的配置管理模块。
+* **开发者体验 (`Developer Experience`)**: 推出了 `@rapidojs/cli` 命令行工具。
+* **安全与 AOP (`@rapidojs/auth`, `@rapidojs/common` 增强)**: 提供了基于守卫的认证机制、基于拦截器的 AOP 能力、生命周期钩子和健康检查。
+* **后台任务 (`@rapidojs/schedule`)**: 提供了声明式的定时任务能力。
+
+#### **当前质量指标:**
+
+* **API 状态**: v1.1.0 的公开 API 已稳定。
+* **测试覆盖率**: 整体代码测试覆盖率维持在 **90%** 以上。
+
+---
+
+### **第三部分: v1.2.0 "数据引擎" (The Data Engine) 版本规划**
+
+#### **版本目标**
+
+将 `Rapido.js` 的能力从应用层扩展到数据层，为开发者提供官方的、与框架深度集成的数据持久化和缓存解决方案。同时，**通过构建完整的官方示例项目，展示框架的全功能应用和最佳实践**，进一步巩固其“开箱即用”的平台地位。
+
+#### **核心交付成果**
+
+1.  **`@rapidojs/typeorm`**: 官方 TypeORM 集成模块。
+2.  **`@rapidojs/redis`**: 官方 Redis 集成模块。
+3.  **官方示例项目 (Official Example Projects)**: 高质量、真实世界的 `Rapido.js` 应用范例。
+4.  **`@rapidojs/cli` 功能升级**: 支持新的数据层模块和代码生成。
+
+#### **详细功能清单 (Checklist)**
+
+##### **1. `@rapidojs/typeorm` - TypeORM 集成模块**
+
+* **功能描述**: 提供与 `Rapido.js` 依赖注入和生命周期深度集成的 TypeORM 模块，简化数据库操作。
+* **最终成果**:
+    * 一个可发布的 NPM 包：`@rapidojs/typeorm`。
+    * 模块配置方法：`TypeOrmModule.forRoot()` 和 `TypeOrmModule.forRootAsync()`。
+    * 特性模块方法：`TypeOrmModule.forFeature([Entity])`。
+    * 辅助注入装饰器：`@InjectRepository(Entity)`。
+    * 事务处理装饰器：`@Transactional()`，简化数据库事务操作。
+* **关键实现路径**:
+    * [ ] **实现 `TypeOrmModule`**: 实现 `forRoot` 和 `forFeature` 等静态方法，核心是动态创建和注册 `DataSource` 和 `Repository` 的 Provider。
+    * [ ] **实现 `@InjectRepository()`**: 创建参数装饰器，以生成特定的注入令牌。
+    * [ ] **实现事务装饰器**: 研究并实现基于 `AsyncLocalStorage` 或请求作用域 Provider 的 `@Transactional()` 装饰器，自动管理事务的开启、提交与回滚。
+    * [ ] **集成生命周期钩子**: 利用 `OnApplicationBootstrap` 和 `BeforeApplicationShutdown` 来管理数据库连接的生命周期。
+    * [ ] **编写测试**: 覆盖所有模块配置方式和注入能力。
+
+##### **2. `@rapidojs/redis` - Redis 集成模块**
+
+* **功能描述**: 提供一个简单、高效的方式来在 `Rapido.js` 应用中使用 Redis。
+* **最终成果**:
+    * 一个可发布的 NPM 包：`@rapidojs/redis`。
+    * 模块配置方法：`RedisModule.forRoot()` 和 `RedisModule.forRootAsync()`。
+    * 辅助注入装饰器：`@InjectRedis()`。
+    * 支持多客户端注入与管理。
+* **关键实现路径**:
+    * [ ] **技术选型**: 选择并集成 `ioredis` 库。
+    * [ ] **支持多客户端**: 重构 `RedisModule`，允许通过 `name` 属性来注册和注入多个不同的 Redis 客户端实例（例如 `@InjectRedis('cache')`, `@InjectRedis('session')`）。
+    * [ ] **实现 `RedisModule`**: 实现模块的静态配置方法，创建并注册 Redis 客户端 Provider。
+    * [ ] **集成生命周期钩子**: 确保 Redis 连接在应用关闭时被优雅地断开。
+    * [ ] **编写测试**: 确保 Redis 客户端能够被成功配置和注入。
+
+##### **3. 官方示例项目 (Official Example Projects)**
+
+* **功能描述**: 构建并开源 1-2 个功能完整的示例应用，作为最佳实践的“活文档”，帮助开发者快速上手并理解如何组合使用 `Rapido.js` 的各项功能。
+* **最终成果**:
+    * **`example-blog-api`**: 一个功能丰富的博客 API，将使用 TypeORM, Postgres, JWT 认证等。
+    * **`example-url-shortener`**: 一个简洁的短链接服务，将使用 Redis 作为主数据存储。
+* **关键实现路径**:
+    * [ ] **设计 API 规格**: 为博客和短链接服务定义详细的 API 端点、请求和响应结构。
+    * [ ] **开发 `example-blog-api`**:
+        * [ ] 使用 `@rapidojs/cli` 创建项目。
+        * [ ] 集成 `@rapidojs/typeorm`，并定义 `User`, `Post`, `Comment` 等实体。
+        * [ ] 集成 `@rapidojs/auth`，实现用户注册、登录和接口保护。
+        * [ ] 实现基于用户所有权的授权守卫（例如，用户只能编辑自己的文章）。
+        * [ ] 实现分页、排序、过滤等复杂查询逻辑，以展示 TypeORM 的高级用法。
+        * [ ] 编写详细的 `README.md`，作为项目的上手教程。
+    * [ ] **开发 `example-url-shortener`**:
+        * [ ] 集成 `@rapidojs/redis` 作为核心数据存储。
+        * [ ] 实现短链接的生成和重定向逻辑。
+        * [ ] (可选) 实现一个基于 Redis 的速率限制拦截器。
+        * [ ] 编写详细的 `README.md`。
+    * [ ] **添加到 Monorepo**: 将两个示例项目添加到主代码库的 `/apps` 目录下，并配置好 CI 流程。
+
+##### **4. `@rapidojs/cli` 功能升级**
+
+* **功能描述**: 让 CLI 能够感知并支持新的数据层模块，进一步提升开发效率。
+* **最终成果**:
+    * `rapido add` 命令支持新模块。
+    * `rapido new` 命令提供选项，允许在创建新项目时直接集成数据模块。
+    * `rapido g` 命令支持生成 TypeORM 实体。
+* **关键实现路径**:
+    * [ ] **更新 `add` 命令**: 增强 `rapido add` 命令，使其在添加 `@rapidojs/typeorm` 时能自动在 `app.module.ts` 中导入 `TypeOrmModule` 的示例代码。
+    * [ ] **更新项目模板**: 修改 `rapido new` 的模板，包含被注释掉的数据模块导入示例。
+    * [ ] **实现 `entity` 生成器**: 新增 `rapido g entity <name>` 命令，用于快速生成 TypeORM 的实体类文件模板。
