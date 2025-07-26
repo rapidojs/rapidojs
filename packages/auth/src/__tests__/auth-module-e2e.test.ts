@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RapidoFactory } from '@rapidojs/core';
-import { Module, Injectable, FastifyApp, Controller, Get } from '@rapidojs/common';
+import { Module, Injectable, FastifyApp, Controller, Get, Inject } from '@rapidojs/common';
 import { AuthModule } from '../auth.module.js';
 import type { FastifyInstance } from 'fastify';
 
@@ -21,7 +21,7 @@ describe('AuthModule E2E', () => {
 
     @Controller('/test')
     class TestAuthController {
-      constructor(private readonly service: TestAuthService) {}
+      constructor(@Inject(TestAuthService) private readonly service: TestAuthService) {}
 
       @Get('/jwt-check')
       checkJwt() {

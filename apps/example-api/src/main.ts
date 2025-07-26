@@ -3,6 +3,7 @@ import { RapidoFactory } from '@rapidojs/core';
 import { AppModule } from './app.module.js';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import * as fs from 'fs';
 import { ConfigService } from '@rapidojs/config';
 import { LoggerService, LogLevel, createLoggerConfig } from '@rapidojs/common';
 import { GlobalAuthGuard } from './modules/global-features/global-auth.guard.js';
@@ -37,6 +38,15 @@ async function bootstrap() {
     
     console.log('App created successfully');
 
+    // 从容器中获取 ConfigService 实例 - 这里应该获取模块注册的实例
+    let configService: ConfigService;
+    try {
+      configService = await app.container.resolve(ConfigService);
+    } catch (error) {
+      console.error('Failed to resolve ConfigService:', error);
+      process.exit(1);
+    }
+
     // 配置全局功能 - 类似 NestJS 的方式
     app
       .useGlobalFilters(new GlobalErrorFilter())  // 全局错误处理
@@ -47,9 +57,9 @@ async function bootstrap() {
     console.log('  🛡️  全局错误过滤器已启用');
     console.log('  🔐 全局认证守卫已启用 (需要 Bearer valid-api-key)');
     console.log('  📝 全局日志管道已启用');
+    
 
-    // 从容器中获取 ConfigService 实例
-    const configService = await app.container.resolve(ConfigService);
+    
     const port = configService.get<number>('app.port');
     const host = configService.get<string>('app.host', '127.0.0.1');
 

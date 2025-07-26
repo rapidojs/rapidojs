@@ -35,58 +35,8 @@ export function UsePipes(...pipes: PipeMetadata[]): MethodDecorator & ClassDecor
   };
 }
 
-/**
- * Enhanced parameter decorators that support pipes
- */
-
-/**
- * Enhanced @Query decorator with pipe support
- */
-export function QueryWithPipe(key?: string, ...pipes: PipeMetadata[]) {
-  return (target: any, propertyKey: string | symbol | undefined, parameterIndex: number) => {
-    if (!propertyKey) return;
-    
-    // Store the pipe metadata for this specific parameter
-    const existingPipes = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, target, propertyKey) || {};
-    existingPipes[parameterIndex] = pipes;
-    Reflect.defineMetadata(METADATA_KEY.PARAM_PIPES, existingPipes, target, propertyKey);
-    
-    // Also apply the original @Query decorator logic
-    // This would need to be imported from param.decorators.ts
-    // For now, we'll implement it inline
-
-    return Query(key)(target, propertyKey, parameterIndex);
-  };
-}
-
-/**
- * Enhanced @Param decorator with pipe support
- */
-export function ParamWithPipe(key?: string, ...pipes: PipeMetadata[]) {
-  return (target: any, propertyKey: string | symbol | undefined, parameterIndex: number) => {
-    if (!propertyKey) return;
-    
-    const existingPipes = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, target, propertyKey) || {};
-    existingPipes[parameterIndex] = pipes;
-    Reflect.defineMetadata(METADATA_KEY.PARAM_PIPES, existingPipes, target, propertyKey);
-    
-
-    return Param(key)(target, propertyKey, parameterIndex);
-  };
-}
-
-/**
- * Enhanced @Body decorator with pipe support
- */
-export function BodyWithPipe(...pipes: PipeMetadata[]) {
-  return (target: any, propertyKey: string | symbol | undefined, parameterIndex: number) => {
-    if (!propertyKey) return;
-    
-    const existingPipes = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, target, propertyKey) || {};
-    existingPipes[parameterIndex] = pipes;
-    Reflect.defineMetadata(METADATA_KEY.PARAM_PIPES, existingPipes, target, propertyKey);
-    
-
-    return Body()(target, propertyKey, parameterIndex);
-  };
-} 
+// 由于 Query, Param, Body 已经支持管道，所以这些就是别名
+// 但测试可能期望它们有特定的管道行为
+export const QueryWithPipe = Query;
+export const ParamWithPipe = Param;
+export const BodyWithPipe = Body; 

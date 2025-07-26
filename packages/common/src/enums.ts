@@ -50,17 +50,4 @@ export enum HttpStatus {
   SERVICE_UNAVAILABLE = 503,
   GATEWAY_TIMEOUT = 504,
   HTTP_VERSION_NOT_SUPPORTED = 505,
-}
-
-export enum ParamType {
-  BODY,
-  QUERY,
-  PARAM,
-  HEADERS,
-  SESSION,
-  FILE,
-  FILES,
-  REQUEST,
-  RESPONSE,
-  APP,
 } 

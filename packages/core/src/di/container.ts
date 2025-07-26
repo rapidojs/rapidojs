@@ -53,16 +53,16 @@ export class DIContainer {
         ? (provider.provide as any)?.name || (typeof provider.provide === 'string' ? provider.provide : 'Unknown')
         : 'Unknown';
 
-    const isUseValue = typeof provider === 'object' && provider.useValue !== undefined;
+    const providerType = typeof provider === 'function' ? 'useClass' : (provider.useValue !== undefined ? 'useValue' : (provider.useFactory ? 'useFactory' : 'unknown'));
 
-    // 检查是否已经有 useValue provider 存在
+    // 检查是否已经有 useValue 提供者存在，如果有则不允许覆盖
     if (this.providers.has(providerToken)) {
       const existingProvider = this.providers.get(providerToken);
-      if (existingProvider.useValue !== undefined && !isUseValue) {
-        return; // 不覆盖 useValue provider
+      if (existingProvider.useValue !== undefined && providerType !== 'useValue') {
+        return; // 不覆盖已存在的 useValue 提供者
       }
     }
-    
+
     if (typeof provider === 'function') {
       this.providers.set(provider, { useClass: provider });
     } else {
@@ -85,6 +85,8 @@ export class DIContainer {
     }
 
     const actualTarget = typeof target === 'string' ? target : this.getInjectionToken(target);
+    
+
 
     if (this.instances.has(actualTarget)) {
       return this.instances.get(actualTarget) as T;
@@ -144,17 +146,32 @@ export class DIContainer {
       const injectMetadata = Reflect.getMetadata(INJECT_METADATA_KEY, targetClass) || {};
 
       const injections = await Promise.all(
-        paramTypes.map(async (paramType: Type<any>, index: number) => {
-          const customToken = injectMetadata[index];
-          if (customToken !== undefined) {
-            return this.resolve(customToken);
-          }
-          // 如果 paramType 是 undefined 或基础类型，跳过解析
-          if (!paramType || typeof paramType !== 'function') {
-            return undefined;
-          }
-          return this.resolve(paramType);
-        }),
+        Object.keys(injectMetadata).length > 0 
+          ? // 如果有注入元数据，根据元数据创建注入数组
+            Array.from({ length: Math.max(...Object.keys(injectMetadata).map(k => parseInt(k))) + 1 }, async (_, index) => {
+              const customToken = injectMetadata[index];
+                             if (customToken !== undefined) {
+                 return this.resolve(customToken);
+               }
+              // 如果有 paramType，使用它
+              const paramType = paramTypes?.[index];
+              if (!paramType || typeof paramType !== 'function') {
+                return undefined;
+              }
+              return this.resolve(paramType);
+            })
+          : // 否则使用 paramTypes
+            (paramTypes || []).map(async (paramType: Type<any>, index: number) => {
+                             const customToken = injectMetadata[index];
+               if (customToken !== undefined) {
+                 return this.resolve(customToken);
+               }
+              // 如果 paramType 是 undefined 或基础类型，跳过解析
+              if (!paramType || typeof paramType !== 'function') {
+                return undefined;
+              }
+              return this.resolve(paramType);
+            }),
       );
 
       const instance = new targetClass(...injections);

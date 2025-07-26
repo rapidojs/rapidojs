@@ -1,11 +1,42 @@
 import { createParamDecorator } from './param-decorator.factory.js';
-import { ParamType } from '../enums.js';
+import { ParamType, Type } from '../types.js';
 import { METADATA_KEY } from '../constants.js';
-import { PipeMetadata } from '../interfaces.js';
+import { ExecutionContext, PipeTransform } from '../interfaces.js';
 import { Inject } from './inject.decorator.js';
 
-// Re-implement all parameter decorators using the factory to ensure consistency
-// with support for NestJS-style pipe parameters
+function createParamDecoratorWithPipes(
+  factory: (data: unknown, context: ExecutionContext) => any,
+  paramType: ParamType,
+) {
+  return (...args: (string | undefined | PipeTransform | Type<PipeTransform>)[]): ParameterDecorator => {
+    // 确定数据部分：第一个参数是字符串或 undefined 时作为 data
+    const data = (typeof args[0] === 'string' || args[0] === undefined) ? args[0] : undefined;
+    
+    // 确定管道部分：如果第一个参数是 data，则从第二个参数开始；否则从第一个参数开始
+    const pipeArgs = (typeof args[0] === 'string' || args[0] === undefined) ? args.slice(1) : args;
+    
+    // 过滤管道：排除 null，但包含其他 undefined（仅当它们不在第一个位置时）
+    const pipes = pipeArgs.filter(
+      arg => arg !== null && (
+        typeof arg === 'function' || 
+        typeof arg === 'undefined' || 
+        (typeof arg === 'object' && 'transform' in arg)
+      )
+    ) as (PipeTransform | Type<PipeTransform>)[];
+
+    return (target, key, index) => {
+      // 设置参数元数据
+      createParamDecorator(factory, paramType)(data)(target, key, index);
+
+      // 设置管道元数据 - 注意这里使用 target 而不是 target.constructor
+      if (pipes.length > 0 && key) {
+        const existingPipes = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, target, key) || {};
+        existingPipes[index] = pipes;
+        Reflect.defineMetadata(METADATA_KEY.PARAM_PIPES, existingPipes, target, key);
+      }
+    };
+  };
+}
 
 export const Body = createParamDecoratorWithPipes((data, ctx) => ctx.switchToHttp().getRequest().body, ParamType.BODY);
 
@@ -26,55 +57,10 @@ export const Headers = createParamDecoratorWithPipes((data, ctx) => {
 
 /**
  * Decorator to inject the Fastify instance.
- * @deprecated This will be removed in a future version. Use `@Inject('APP_INSTANCE')` instead.
  */
 export function FastifyApp(): ParameterDecorator {
   return Inject('APP_INSTANCE');
 }
 
 export const Req = createParamDecorator((data, ctx) => ctx.switchToHttp().getRequest(), ParamType.REQUEST);
-export const Res = createParamDecorator((data, ctx) => ctx.switchToHttp().getResponse(), ParamType.RESPONSE);
-
-/**
- * 创建支持管道参数的参数装饰器
- */
-function createParamDecoratorWithPipes(
-  factory: (data: unknown, context: any) => any,
-  paramType: ParamType,
-): (...args: any[]) => ParameterDecorator {
-  return (...args: any[]): ParameterDecorator => {
-    let data: any;
-    let pipes: PipeMetadata[] = [];
-    
-    if (args.length === 0) {
-      // @Query() - 无参数
-      data = undefined;
-    } else if (args.length === 1) {
-      if (typeof args[0] === 'string' || args[0] === undefined) {
-        // @Query('key') - 只有 key
-        data = args[0];
-      } else {
-        // @Query(ParseIntPipe) - 只有管道
-        data = undefined;
-        pipes = [args[0]];
-      }
-    } else {
-      // @Query('key', ParseIntPipe) - key 和管道
-      data = args[0];
-      pipes = args.slice(1);
-    }
-    
-    return (target: any, propertyKey: string | symbol | undefined, parameterIndex: number) => {
-      // 应用原始的参数装饰器逻辑
-      const paramDecorator = createParamDecorator(factory, paramType)(data);
-      paramDecorator(target, propertyKey, parameterIndex);
-      
-      // 存储管道元数据
-      if (pipes.length > 0 && propertyKey) {
-        const existingPipes = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, target, propertyKey) || {};
-        existingPipes[parameterIndex] = pipes;
-        Reflect.defineMetadata(METADATA_KEY.PARAM_PIPES, existingPipes, target, propertyKey);
-      }
-    };
-  };
-} 
+export const Res = createParamDecorator((data, ctx) => ctx.switchToHttp().getResponse(), ParamType.RESPONSE); 
