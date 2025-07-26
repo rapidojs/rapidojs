@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { Type } from '../types.js';
 import { ExceptionFilter } from './exception-filter.interface.js';
 import { PipeTransform } from '../pipes/pipe-transform.interface.js';
-import { CanActivate, ExecutionContext } from '@rapidojs/common';
+import { CanActivate, ExecutionContext, Interceptor } from '@rapidojs/common';
 import { DIContainer } from '../di/container.js';
 import { StaticFileConfig } from './app-config.interface.js';
 
@@ -91,4 +91,43 @@ export interface RapidoApp extends FastifyInstance {
    * Get all registered global guards
    */
   getGlobalGuards(): (CanActivate | Type<CanActivate>)[];
-} 
+
+  /**
+   * Registers interceptors as global interceptors (will be used within every HTTP route handler).
+   * Interceptors are executed around the route handler and can transform the request/response.
+   * 
+   * @param interceptors - Interceptor classes or instances
+   * @returns The application instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
+   * ```
+   */
+  useGlobalInterceptors(...interceptors: (Interceptor | Type<Interceptor>)[]): this;
+
+  /**
+   * Get all registered global interceptors
+   */
+  getGlobalInterceptors(): (Interceptor | Type<Interceptor>)[];
+
+  /**
+   * Get instances of all global interceptors
+   */
+  getGlobalInterceptorsInstances(): Promise<Interceptor[]>;
+
+  /**
+   * Call OnApplicationBootstrap lifecycle hooks on all providers
+   */
+  callOnApplicationBootstrap(): Promise<void>;
+
+  /**
+   * Call BeforeApplicationShutdown lifecycle hooks on all providers
+   */
+  callBeforeApplicationShutdown(): Promise<void>;
+
+  /**
+   * Call OnModuleDestroy lifecycle hooks on all providers
+   */
+  callOnModuleDestroy(): Promise<void>;
+}

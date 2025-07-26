@@ -1,6 +1,6 @@
 {
   "name": "@rapidojs/auth",
-  "version": "1.1.0",
+  "version": "1.0.5",
   "description": "Official authentication module for Rapido.js, with built-in support for JWT.",
   "main": "dist/index.js",
   "scripts": {

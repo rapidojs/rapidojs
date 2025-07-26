@@ -293,7 +293,7 @@ export class ApiController {
 
 ### 认证与授权
 
-``typescript
+```typescript
 import { AuthModule, JwtAuthGuard } from '@rapidojs/auth';
 import { UseGuards, Public, CurrentUser } from '@rapidojs/common';
 
@@ -325,6 +325,96 @@ export class AuthController {
     return user;
   }
 }
+```
+
+### 拦截器系统
+
+```typescript
+import { Interceptor, ExecutionContext, CallHandler, UseInterceptors } from '@rapidojs/core';
+
+// 自定义拦截器
+@Injectable()
+export class LoggingInterceptor implements Interceptor {
+  async intercept(context: ExecutionContext, next: CallHandler): Promise<any> {
+    const start = Date.now();
+    console.log(`请求前: ${context.getRequest().method} ${context.getRequest().url}`);
+    
+    const result = await next.handle();
+    
+    const duration = Date.now() - start;
+    console.log(`请求后: ${duration}ms`);
+    
+    return result;
+  }
+}
+
+// 应用拦截器到特定方法
+@Controller('/api/users')
+export class UsersController {
+  @Get()
+  @UseInterceptors(LoggingInterceptor)
+  findAll() {
+    return this.usersService.findAll();
+  }
+}
+
+// 全局应用拦截器
+const app = new RapidoApplication(AppModule);
+app.useGlobalInterceptors(new LoggingInterceptor());
+```
+
+### 生命周期钩子
+
+```typescript
+import { OnModuleInit, OnApplicationBootstrap, OnModuleDestroy } from '@rapidojs/core';
+
+@Injectable()
+export class DatabaseService implements OnModuleInit, OnApplicationBootstrap, OnModuleDestroy {
+  private connection: any;
+
+  async onModuleInit() {
+    console.log('DatabaseService: 模块初始化');
+    // 初始化数据库连接
+    this.connection = await this.createConnection();
+  }
+
+  async onApplicationBootstrap() {
+    console.log('DatabaseService: 应用启动完成');
+    // 运行数据库迁移或种子数据
+    await this.runMigrations();
+  }
+
+  async onModuleDestroy() {
+    console.log('DatabaseService: 模块销毁');
+    // 清理数据库连接
+    await this.connection.close();
+  }
+
+  private async createConnection() {
+    // 数据库连接逻辑
+  }
+
+  private async runMigrations() {
+    // 迁移逻辑
+  }
+}
+```
+
+### 健康检查模块
+
+```typescript
+import { HealthModule } from '@rapidojs/core';
+
+@Module({
+  imports: [HealthModule],
+})
+export class AppModule {}
+
+// 可用端点：
+// GET /health - 基础健康检查
+// GET /health/detailed - 详细系统信息
+// GET /health/readiness - Kubernetes 就绪探针
+// GET /health/liveness - Kubernetes 存活探针
 ```
 
 ## 📊 性能表现
@@ -389,11 +479,13 @@ rapidojs/
 - [x] **CLI 工具** - 项目生成和管理
 - [x] **认证与授权** - `@rapidojs/auth` 包，支持 JWT
 - [x] **守卫系统** - `@UseGuards`, `@Public`, `@CurrentUser` 装饰器
-- [x] **测试覆盖** - 89.22% 测试覆盖率
+- [x] **拦截器系统** - `@UseInterceptors`，方法/类/全局拦截器
+- [x] **生命周期钩子** - `OnModuleInit`, `OnApplicationBootstrap` 等
+- [x] **健康检查模块** - 内置健康监控端点
+- [x] **测试覆盖** - 全面的测试套件，477 个测试通过
 
 ### 🔄 开发中 (v1.1.0 "武库")
 
-- [ ] 拦截器 (Interceptors) 与 AOP
 - [ ] 任务调度 `@rapidojs/schedule`
 - [ ] CLI 功能增强 (`add`, `g <schematic>`)
 - [ ] 完整文档站点

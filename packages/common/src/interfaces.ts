@@ -157,6 +157,75 @@ export interface ValidationPipeOptions {
  */
 export type PipeMetadata = PipeTransform | (new (...args: any[]) => PipeTransform); 
 
+/**
+ * Interface for interceptors that can intercept and modify the execution flow
+ */
+export interface Interceptor<T = any, R = any> {
+  /**
+   * Intercepts the execution of a route handler
+   * @param context - The execution context
+   * @param next - The call handler to continue execution
+   * @returns The result or a modified result
+   */
+  intercept(context: ExecutionContext, next: CallHandler<T>): R | Promise<R>;
+}
+
+/**
+ * Interface for the call handler used in interceptors
+ */
+export interface CallHandler<T = any> {
+  /**
+   * Continues the execution and returns an observable-like object
+   * @returns The result of the handler execution
+   */
+  handle(): Promise<T>;
+}
+
+/**
+ * Type representing an interceptor constructor or instance
+ */
+export type InterceptorMetadata = Interceptor | (new (...args: any[]) => Interceptor);
+
+/**
+ * Lifecycle hook interface for application bootstrap
+ */
+export interface OnApplicationBootstrap {
+  /**
+   * Called after the application has been initialized
+   */
+  onApplicationBootstrap(): void | Promise<void>;
+}
+
+/**
+ * Lifecycle hook interface for application shutdown
+ */
+export interface BeforeApplicationShutdown {
+  /**
+   * Called before the application shuts down
+   */
+  beforeApplicationShutdown(): void | Promise<void>;
+}
+
+/**
+ * Lifecycle hook interface for module initialization
+ */
+export interface OnModuleInit {
+  /**
+   * Called after the module has been initialized
+   */
+  onModuleInit(): void | Promise<void>;
+}
+
+/**
+ * Lifecycle hook interface for module destruction
+ */
+export interface OnModuleDestroy {
+  /**
+   * Called before the module is destroyed
+   */
+  onModuleDestroy(): void | Promise<void>;
+}
+
 export interface ModuleMetadata {
   imports?: Array<Type<any> | DynamicModule | ForwardReference>;
   controllers?: Type<any>[];
@@ -167,4 +236,4 @@ export interface ModuleMetadata {
 
 export interface DynamicModule extends ModuleMetadata {
   // ... existing code ...
-} 
+}

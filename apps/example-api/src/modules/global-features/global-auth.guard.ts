@@ -8,9 +8,20 @@ export class GlobalAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     
+    // 获取路径部分（去除查询参数）
+    const pathname = request.url.split('?')[0];
+    
     // 跳过不需要认证的端点
     const publicEndpoints = ['/health', '/', '/auth/login'];
-    if (publicEndpoints.includes(request.url)) {
+    const publicPrefixes = ['/health/'];
+    
+    // 检查精确匹配
+    if (publicEndpoints.includes(pathname)) {
+      return true;
+    }
+    
+    // 检查前缀匹配
+    if (publicPrefixes.some(prefix => pathname.startsWith(prefix))) {
       return true;
     }
     
@@ -39,4 +50,4 @@ export class GlobalAuthGuard implements CanActivate {
     console.log('请求被拒绝: 无效的令牌');
     return false;
   }
-} 
+}

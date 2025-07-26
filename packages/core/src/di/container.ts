@@ -260,6 +260,38 @@ export class DIContainer {
     return bootstrapProviders;
   }
 
+  public getAllProviders(module: ModuleType, visited = new Set<ModuleType>()): any[] {
+    if (visited.has(module)) {
+      return [];
+    }
+    visited.add(module);
+
+    if (isDynamicModule(module)) {
+      let providers = module.providers || [];
+      if (module.imports) {
+        for (const imported of module.imports) {
+          providers = [...providers, ...this.getAllProviders(imported, visited)];
+        }
+      }
+      return providers;
+    }
+
+    const resolvedModule = 'forwardRef' in module ? module() : module;
+    const metadata = Reflect.getMetadata(MODULE_METADATA_KEY, resolvedModule);
+
+    if (!metadata) {
+      return [];
+    }
+
+    let providers = metadata.providers || [];
+    if (metadata.imports) {
+      for (const imported of metadata.imports) {
+        providers = [...providers, ...this.getAllProviders(imported, visited)];
+      }
+    }
+    return providers;
+  }
+
   public findFilter(exception: Error): Type<ExceptionFilter> | undefined {
     const exceptionType = exception.constructor as Type<Error>;
     return this.exceptionFilters.get(exceptionType);

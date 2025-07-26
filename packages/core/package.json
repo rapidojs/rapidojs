@@ -1,6 +1,6 @@
 {
   "name": "@rapidojs/core",
-  "version": "1.0.1",
+  "version": "1.0.5",
   "type": "module",
   "description": "Core engine for the Rapido.js framework.",
   "license": "MIT",

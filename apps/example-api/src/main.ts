@@ -72,10 +72,7 @@ async function bootstrap() {
       'app.name': configService.get('app.name'),
     });
 
-    // 添加根路径重定向到测试页面
-    app.get('/', async (request, reply) => {
-      return reply.redirect('/public/index.html');
-    });
+    // 根路径由 AppController 处理
 
     await app.listen({ port, host });
     console.log(`🚀 Server listening on http://${host}:${port}`);

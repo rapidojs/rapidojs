@@ -1,4 +1,4 @@
-import { Module } from '@rapidojs/core';
+import { Module, HealthModule } from '@rapidojs/core';
 import { AppController } from './app.controller.js';
 import { ConfigModule } from '@rapidojs/config';
 import { LoggerService } from '@rapidojs/common';
@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { ConfigService } from '@rapidojs/config';
 import { ExceptionsModule } from './modules/exceptions/exceptions.module.js';
 import { ConfigDemoModule } from './modules/config/config.module.js';
+import { LifecycleTestModule } from './modules/lifecycle/lifecycle-test.module.js';
 
 /**
  * 配置验证函数
@@ -45,11 +46,13 @@ function validateConfig(config: Record<string, any>): void {
       }),
       inject: [ConfigService],
     }),
+    HealthModule, // 健康检查模块
     UserModule, 
     ProductModule, 
     AuthModule, 
     ExceptionsModule,
     ConfigDemoModule, // 配置演示模块
+    LifecycleTestModule,
   ],
   controllers: [AppController],
   providers: [],

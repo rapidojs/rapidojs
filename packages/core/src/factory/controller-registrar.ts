@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { METADATA_KEY } from '../constants.js';
 import { RouteDefinition, Type } from '../types.js';
-import { ParamDefinition, ParamType, CanActivate, PipeMetadata, PUBLIC_ROUTE_METADATA, GUARDS_METADATA, MODULE_METADATA_KEY, ROUTE_ARGS_METADATA, ModuleMetadata } from '@rapidojs/common';
+import { ParamDefinition, ParamType, CanActivate, PipeMetadata, PUBLIC_ROUTE_METADATA, GUARDS_METADATA, MODULE_METADATA_KEY, ROUTE_ARGS_METADATA, ModuleMetadata, INTERCEPTORS_METADATA, Interceptor, CallHandler, InterceptorMetadata } from '@rapidojs/common';
 import { DIContainer } from '../di/container.js';
 import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
 import { ValidationPipe } from '../pipes/validation.pipe.js';
@@ -49,6 +49,7 @@ export class ControllerRegistrar {
       const params = Object.values(paramsMetadata) as ParamDefinition[];
       
       const guardsExecutor = await this.createGuardsExecutor(controller, route.methodName);
+      const interceptorsExecutor = await this.createInterceptorsExecutor(controller, route.methodName);
 
       const handler = async (request: any, reply: any) => {
         try {
@@ -58,8 +59,14 @@ export class ControllerRegistrar {
             return;
           }
 
-          const args = await this.extractArguments(request, reply, params, controller, route.methodName);
-          const result = await (controllerInstance as any)[route.methodName](...args);
+          const context = new HttpExecutionContextImpl(request, reply, controller, (controller.prototype as any)[route.methodName]);
+          
+          // Execute interceptors
+          const result = await interceptorsExecutor(context, async () => {
+            const args = await this.extractArguments(request, reply, params, controller, route.methodName);
+            return await (controllerInstance as any)[route.methodName](...args);
+          });
+          
           return result;
         } catch (error) {
           // 重新抛出异常，让 Fastify 的错误处理器处理
@@ -127,6 +134,63 @@ export class ControllerRegistrar {
       }
       return true;
     };
+  }
+
+  private async createInterceptorsExecutor(
+    controller: Type<any>,
+    methodName: string | symbol
+  ): Promise<(context: any, next: () => Promise<any>) => Promise<any>> {
+    // Get global interceptors
+    let globalInterceptors: InterceptorMetadata[] = [];
+    if ('getGlobalInterceptors' in this.fastify) {
+      globalInterceptors = (this.fastify as any).getGlobalInterceptors();
+    }
+
+    // Get class and method interceptors
+    const classInterceptors = Reflect.getMetadata(INTERCEPTORS_METADATA, controller) || [];
+    const methodInterceptors = Reflect.getMetadata(INTERCEPTORS_METADATA, (controller.prototype as any)[methodName]) || [];
+    
+    // Combine all interceptors: global -> class -> method
+    const allInterceptors = [...globalInterceptors, ...classInterceptors, ...methodInterceptors];
+
+    return async (context: any, next: () => Promise<any>): Promise<any> => {
+      if (allInterceptors.length === 0) {
+        return next();
+      }
+
+      // Create the interceptor chain
+      let index = 0;
+      
+      const executeInterceptor = async (): Promise<any> => {
+        if (index >= allInterceptors.length) {
+          return next();
+        }
+        
+        const interceptor = allInterceptors[index++];
+        const interceptorInstance = await this.createInterceptorInstance(interceptor);
+        
+        const callHandler: CallHandler = {
+          handle: executeInterceptor
+        };
+        
+        return interceptorInstance.intercept(context, callHandler);
+      };
+      
+      return executeInterceptor();
+    };
+  }
+
+  /**
+   * Create interceptor instance from metadata
+   */
+  private async createInterceptorInstance(interceptor: InterceptorMetadata): Promise<Interceptor> {
+    if (typeof interceptor === 'function') {
+      // Interceptor constructor - resolve through DI container
+      return await this.container.resolve(interceptor) as Interceptor;
+    } else {
+      // Interceptor instance
+      return interceptor;
+    }
   }
 
   private joinPaths(prefix: string, path: string): string {

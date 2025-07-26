@@ -1,6 +1,6 @@
 {
   "name": "@rapidojs/config",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "type": "module",
   "description": "Configuration module for Rapido.js framework with support for .env and YAML files.",
   "license": "MIT",
@@ -48,4 +48,4 @@
   "publishConfig": {
     "access": "public"
   }
-} 
+}

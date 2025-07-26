@@ -77,11 +77,11 @@ v1.0.0 版本已成功发布，为框架奠定了坚实的基础，使其成为�
     * 生命周期接口：`OnApplicationBootstrap`, `BeforeApplicationShutdown` 等。
     * 一个内置的、可配置的 `/health` 健康检查端点。
 * **关键实现路径**:
-    * [ ] **实现拦截器逻辑**: 修改核心注册器的包裹处理函数，将其改造为支持 `next()` 模式的调用链。
-    * [ ] **实现内置拦截器**: 创建 `TransformInterceptor` 和 `LoggingInterceptor` 作为通用工具。
-    * [ ] **实现 @NoTransform() 装饰器**: 为 `TransformInterceptor` 增加元数据检查逻辑，使其可以被 `@NoTransform()` 豁免。
-    * [ ] **实现生命周期钩子**: 在 `RapidoFactory` 的启动和关闭流程中，增加对生命周期钩子的扫描和执行。
-    * [ ] **实现健康检查**: 在核心中增加可配置的健康检查模块。
+    * [x] **实现拦截器逻辑**: 修改核心注册器的包裹处理函数，将其改造为支持 `next()` 模式的调用链。
+    * [x] **实现内置拦截器**: 创建 `TransformInterceptor` 和 `LoggingInterceptor` 作为通用工具。
+    * [x] **实现 @NoTransform() 装饰器**: 为 `TransformInterceptor` 增加元数据检查逻辑，使其可以被 `@NoTransform()` 豁免。
+    * [x] **实现生命周期钩子**: 在 `RapidoFactory` 的启动和关闭流程中，增加对生命周期钩子的扫描和执行。
+    * [x] **实现健康检查**: 在核心中增加可配置的健康检查模块。
 
 ##### **3. `@rapidojs/schedule` - 任务调度模块**
 

@@ -20,6 +20,7 @@ export const METADATA_KEY = {
   PIPES: Symbol.for('rapido:pipes'),
   PARAM_PIPES: Symbol.for('rapido:param_pipes'),
   GUARDS: Symbol('controller:guards'),
+  INTERCEPTORS: Symbol.for('rapido:interceptors'),
   ROUTE_ARGS_METADATA: COMMON_ROUTE_ARGS_METADATA
 };
 
@@ -41,7 +42,8 @@ export const EXCEPTION_FILTER_METADATA = 'exception-filter:metadata';
 export const GLOBAL_METADATA = {
   FILTERS: Symbol.for('rapido:global:filters'),
   PIPES: Symbol.for('rapido:global:pipes'),
-  GUARDS: Symbol.for('rapido:global:guards')
+  GUARDS: Symbol.for('rapido:global:guards'),
+  INTERCEPTORS: Symbol.for('rapido:global:interceptors')
 } as const;
 export const FORWARD_REF_METADATA = 'forward-ref:metadata';
 export const CIRCULAR_DEPENDENCY_HISTORY = 'circular-dependency:history';

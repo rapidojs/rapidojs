@@ -8,7 +8,7 @@ import { HttpException } from '../exceptions/http-exception.js';
 import { RapidoApp } from '../interfaces/rapido-app.interface.js';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
 import { PipeTransform } from '../pipes/pipe-transform.interface.js';
-import { CanActivate, LoggerService } from '@rapidojs/common';
+import { CanActivate, LoggerService, Interceptor, OnApplicationBootstrap, BeforeApplicationShutdown, OnModuleInit, OnModuleDestroy } from '@rapidojs/common';
 import { HttpExecutionContextImpl } from '../helpers/execution-context-impl.js';
 
 /**
@@ -40,6 +40,7 @@ export class RapidoFactory {
     let globalFilters: (ExceptionFilter | Type<ExceptionFilter>)[] = [];
     let globalPipes: (PipeTransform | Type<PipeTransform>)[] = [];
     let globalGuards: (CanActivate | Type<CanActivate>)[] = [];
+    let globalInterceptors: (Interceptor | Type<Interceptor>)[] = [];
 
 
     const registerStaticConfig = async (staticConfig: StaticFileConfig) => {
@@ -76,6 +77,19 @@ export class RapidoFactory {
       await container.resolve(provider);
     }
 
+    // Call OnModuleInit lifecycle hooks
+    const allProviders = container.getAllProviders(rootModule);
+    for (const provider of allProviders) {
+      try {
+        const instance = await container.resolve(provider);
+        if (instance && typeof (instance as any).onModuleInit === 'function') {
+          await (instance as OnModuleInit).onModuleInit();
+        }
+      } catch (error) {
+        // Ignore resolution errors for optional lifecycle hooks
+      }
+    }
+
     const controllers = container.getControllers(rootModule);
 
     // Helper functions for resolving instances
@@ -110,6 +124,17 @@ export class RapidoFactory {
         }
       }
       return guard;
+    };
+
+    const resolveInterceptor = async (interceptor: Interceptor | Type<Interceptor>): Promise<Interceptor> => {
+      if (typeof interceptor === 'function') {
+        try {
+          return await container.resolve(interceptor);
+        } catch {
+          return new interceptor();
+        }
+      }
+      return interceptor;
     };
 
     const canHandleException = (filter: ExceptionFilter, exception: Error): boolean => {
@@ -196,6 +221,11 @@ export class RapidoFactory {
       return app as RapidoApp;
     };
 
+    (app as any).useGlobalInterceptors = (...interceptors: (Interceptor | Type<Interceptor>)[]): RapidoApp => {
+      globalInterceptors.push(...interceptors);
+      return app as RapidoApp;
+    };
+
     (app as any).getGlobalFilters = (): (ExceptionFilter | Type<ExceptionFilter>)[] => {
       return [...globalFilters];
     };
@@ -206,6 +236,10 @@ export class RapidoFactory {
 
     (app as any).getGlobalGuards = (): (CanActivate | Type<CanActivate>)[] => {
       return [...globalGuards];
+    };
+
+    (app as any).getGlobalInterceptors = (): (Interceptor | Type<Interceptor>)[] => {
+      return [...globalInterceptors];
     };
 
     // 添加访问全局管道和守卫的方法给 ControllerRegistrar 使用
@@ -239,6 +273,15 @@ export class RapidoFactory {
       return result;
     };
 
+    (app as any).getGlobalInterceptorsInstances = async (): Promise<Interceptor[]> => {
+      const instances: Interceptor[] = [];
+      for (const interceptor of globalInterceptors) {
+        const instance = await resolveInterceptor(interceptor);
+        instances.push(instance);
+      }
+      return instances;
+    };
+
     // 立即设置错误处理器
     setupErrorHandler();
 
@@ -248,6 +291,87 @@ export class RapidoFactory {
 
     // Attach the container to the app instance
     (app as any).container = container;
+
+    // Add lifecycle hook methods
+    (app as any).callOnApplicationBootstrap = async (): Promise<void> => {
+      const allProviders = container.getAllProviders(rootModule);
+      for (const provider of allProviders) {
+        try {
+          const instance = await container.resolve(provider);
+          if (instance && typeof (instance as any).onApplicationBootstrap === 'function') {
+            await (instance as OnApplicationBootstrap).onApplicationBootstrap();
+          }
+        } catch (error) {
+          // Ignore resolution errors for optional lifecycle hooks
+        }
+      }
+    };
+
+    (app as any).callBeforeApplicationShutdown = async (): Promise<void> => {
+      const allProviders = container.getAllProviders(rootModule);
+      for (const provider of allProviders) {
+        try {
+          const instance = await container.resolve(provider);
+          if (instance && typeof (instance as any).beforeApplicationShutdown === 'function') {
+            await (instance as BeforeApplicationShutdown).beforeApplicationShutdown();
+          }
+        } catch (error) {
+          // Ignore resolution errors for optional lifecycle hooks
+        }
+      }
+    };
+
+    (app as any).callOnModuleDestroy = async (): Promise<void> => {
+      const allProviders = container.getAllProviders(rootModule);
+      for (const provider of allProviders) {
+        try {
+          const instance = await container.resolve(provider);
+          if (instance && typeof (instance as any).onModuleDestroy === 'function') {
+            await (instance as OnModuleDestroy).onModuleDestroy();
+          }
+        } catch (error) {
+          // Ignore resolution errors for optional lifecycle hooks
+        }
+      }
+    };
+
+    // Override the listen method to automatically call lifecycle hooks
+    const originalListen = app.listen.bind(app);
+    (app as any).listen = async (...args: any[]): Promise<string> => {
+      // Call OnApplicationBootstrap before starting the server
+      await (app as any).callOnApplicationBootstrap();
+      
+      // Start the server
+      const address = await originalListen(...args);
+      
+      // Set up graceful shutdown handlers
+      const gracefulShutdown = async (signal: string) => {
+        console.log(`Received ${signal}. Starting graceful shutdown...`);
+        
+        try {
+          // Call BeforeApplicationShutdown lifecycle hooks
+          await (app as any).callBeforeApplicationShutdown();
+          
+          // Call OnModuleDestroy lifecycle hooks
+          await (app as any).callOnModuleDestroy();
+          
+          // Close the server
+          await app.close();
+          
+          console.log('Graceful shutdown completed.');
+          process.exit(0);
+        } catch (error) {
+          console.error('Error during graceful shutdown:', error);
+          process.exit(1);
+        }
+      };
+      
+      // Register signal handlers for graceful shutdown
+      process.once('SIGINT', () => gracefulShutdown('SIGINT'));
+      process.once('SIGTERM', () => gracefulShutdown('SIGTERM'));
+      
+      return address;
+    };
 
     return app as RapidoApp;
   }

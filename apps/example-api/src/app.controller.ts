@@ -4,9 +4,19 @@ import { Controller, Get, LoggerService } from '@rapidojs/common';
 export class AppController {
   private readonly logger = new LoggerService(AppController);
 
-  @Get('/health')
-  getHealth(): object {
-    this.logger.info('收到getHealth请求');
-    return { status: 'ok', timestamp: new Date().toISOString() };
+  @Get('/')
+  getRoot(): object {
+    this.logger.info('收到根路径请求');
+    return { 
+      message: 'Welcome to RapidoJS Example API',
+      version: '1.1.0',
+      timestamp: new Date().toISOString(),
+      endpoints: {
+        health: '/health',
+        users: '/users',
+        products: '/products',
+        auth: '/auth'
+      }
+    };
   }
 }
