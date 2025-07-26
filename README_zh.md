@@ -25,6 +25,8 @@
 - 📦 **模块化架构** - 基于 `tsyringe` 的依赖注入，构建可测试、可维护的应用
 - ⚡ **ESM 原生** - 现代化的 ES 模块支持，拥抱未来标准
 - 🛠️ **开发者友好** - 内置 CLI 工具，一键生成项目骨架
+- 🔐 **认证与授权** - 内置 JWT 认证，支持守卫和策略模式
+- 🛡️ **安全** - 守卫系统用于路由保护和公开路由豁免
 
 ## 🚀 快速开始
 
@@ -65,7 +67,7 @@ pnpm add -D typescript @types/node
 
 ### 创建你的第一个 API
 
-```typescript
+``typescript
 import 'reflect-metadata';
 import { 
   Controller, 
@@ -192,7 +194,7 @@ curl -X POST http://localhost:3000/api/users \
 
 ### 装饰器系统
 
-```typescript
+``typescript
 // 路由装饰器
 @Controller('/api')    // 控制器前缀
 @Get('/users')         // GET 路由
@@ -227,7 +229,7 @@ findOne(@Param('id', ParseIntPipe) id: number) {
 
 ### 模块化架构
 
-```typescript
+``typescript
 @Module({
   controllers: [UsersController],   // 控制器
   providers: [UsersService],        // 服务提供者
@@ -241,7 +243,7 @@ export class UsersModule {}
 
 ### 配置管理
 
-```typescript
+``typescript
 import { ConfigModule, ConfigService } from '@rapidojs/config';
 
 @Module({
@@ -268,7 +270,7 @@ export class DatabaseService {
 
 ### 异常处理
 
-```typescript
+``typescript
 import { HttpException, BadRequestException, NotFoundException } from '@rapidojs/core';
 
 @Controller('/api')
@@ -291,15 +293,35 @@ export class ApiController {
 
 ### 认证与授权
 
-```typescript
+``typescript
 import { AuthModule, JwtAuthGuard } from '@rapidojs/auth';
-import { UseGuards, CurrentUser } from '@rapidojs/common';
+import { UseGuards, Public, CurrentUser } from '@rapidojs/common';
 
-@Controller('/api/profile')
-@UseGuards(JwtAuthGuard)
-export class ProfileController {
-  @Get()
-  getProfile(@CurrentUser() user: any) {
+@Module({
+  imports: [
+    AuthModule.forRoot({
+      secret: 'my-jwt-secret-key',
+      sign: { expiresIn: '1d' },
+    }),
+  ],
+})
+export class AppModule {}
+
+@Controller('/api/auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  // 公开路由 - 无需认证
+  @Public()
+  @Post('/login')
+  async login(@Body() credentials: LoginDto) {
+    return this.authService.login(credentials);
+  }
+
+  // 受保护路由 - 需要有效的 JWT
+  @UseGuards(JwtAuthGuard)
+  @Get('/profile')
+  getProfile(@CurrentUser() user: User) {
     return user;
   }
 }
@@ -318,7 +340,7 @@ export class ProfileController {
 
 ## 🛠️ CLI 工具
 
-```bash
+``bash
 # 全局安装 CLI
 pnpm add -g @rapidojs/cli
 
@@ -343,6 +365,7 @@ rapidojs/
 ├── packages/                    # 核心包
 │   ├── core/                   # @rapidojs/core
 │   ├── config/                 # @rapidojs/config
+│   ├── auth/                   # @rapidojs/auth
 │   └── cli/                    # @rapidojs/cli
 ├── apps/                       # 示例应用
 │   ├── example-api/           # API 示例
@@ -354,7 +377,7 @@ rapidojs/
 
 ## 🚧 开发进度
 
-### ✅ 已完成 (v0.4)
+### ✅ 已完成 (v1.1.0 "武库")
 
 - [x] **基础装饰器系统** - `@Controller`, `@Get`, `@Post` 等
 - [x] **参数装饰器** - `@Param`, `@Query`, `@Body`, `@Headers`
@@ -364,19 +387,22 @@ rapidojs/
 - [x] **异常处理** - `HttpException`, `BadRequestException` 等
 - [x] **配置管理** - `@rapidojs/config` 包
 - [x] **CLI 工具** - 项目生成和管理
+- [x] **认证与授权** - `@rapidojs/auth` 包，支持 JWT
+- [x] **守卫系统** - `@UseGuards`, `@Public`, `@CurrentUser` 装饰器
 - [x] **测试覆盖** - 89.22% 测试覆盖率
 
-### 🔄 开发中 (v1.1)
+### 🔄 开发中 (v1.1.0 "武库")
 
 - [ ] 拦截器 (Interceptors) 与 AOP
 - [ ] 任务调度 `@rapidojs/schedule`
 - [ ] CLI 功能增强 (`add`, `g <schematic>`)
 - [ ] 完整文档站点
 
-### 🎯 未来计划 (v1.2+)
+### 🎯 未来计划 (v1.2.0 "数据引擎")
 
 - [ ] 数据库集成 `@rapidojs/typeorm`
 - [ ] 缓存模块 `@rapidojs/redis`
+- [ ] 官方示例项目
 - [ ] WebSocket 支持
 - [ ] GraphQL 集成
 - [ ] 微服务支持
