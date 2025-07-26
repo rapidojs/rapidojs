@@ -25,6 +25,8 @@
 - 📦 **模块化架构** - 基于 `tsyringe` 的依赖注入，构建可测试、可维护的应用
 - ⚡ **ESM 原生** - 现代化的 ES 模块支持，拥抱未来标准
 - 🛠️ **开发者友好** - 内置 CLI 工具，一键生成项目骨架
+- 🔐 **认证与授权** - 内置 JWT 认证，支持守卫和策略模式
+- 🛡️ **安全** - 守卫系统用于路由保护和公开路由豁免
 
 ## 🚀 快速开始
 
@@ -65,7 +67,7 @@ pnpm add -D typescript @types/node
 
 ### 创建你的第一个 API
 
-```typescript
+``typescript
 import 'reflect-metadata';
 import { 
   Controller, 
@@ -192,7 +194,7 @@ curl -X POST http://localhost:3000/api/users \
 
 ### 装饰器系统
 
-```typescript
+``typescript
 // 路由装饰器
 @Controller('/api')    // 控制器前缀
 @Get('/users')         // GET 路由
@@ -227,7 +229,7 @@ findOne(@Param('id', ParseIntPipe) id: number) {
 
 ### 模块化架构
 
-```typescript
+``typescript
 @Module({
   controllers: [UsersController],   // 控制器
   providers: [UsersService],        // 服务提供者
@@ -241,7 +243,7 @@ export class UsersModule {}
 
 ### 配置管理
 
-```typescript
+``typescript
 import { ConfigModule, ConfigService } from '@rapidojs/config';
 
 @Module({
@@ -268,7 +270,7 @@ export class DatabaseService {
 
 ### 异常处理
 
-```typescript
+``typescript
 import { HttpException, BadRequestException, NotFoundException } from '@rapidojs/core';
 
 @Controller('/api')
@@ -289,6 +291,132 @@ export class ApiController {
 }
 ```
 
+### 认证与授权
+
+```typescript
+import { AuthModule, JwtAuthGuard } from '@rapidojs/auth';
+import { UseGuards, Public, CurrentUser } from '@rapidojs/common';
+
+@Module({
+  imports: [
+    AuthModule.forRoot({
+      secret: 'my-jwt-secret-key',
+      sign: { expiresIn: '1d' },
+    }),
+  ],
+})
+export class AppModule {}
+
+@Controller('/api/auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  // 公开路由 - 无需认证
+  @Public()
+  @Post('/login')
+  async login(@Body() credentials: LoginDto) {
+    return this.authService.login(credentials);
+  }
+
+  // 受保护路由 - 需要有效的 JWT
+  @UseGuards(JwtAuthGuard)
+  @Get('/profile')
+  getProfile(@CurrentUser() user: User) {
+    return user;
+  }
+}
+```
+
+### 拦截器系统
+
+```typescript
+import { Interceptor, ExecutionContext, CallHandler, UseInterceptors } from '@rapidojs/core';
+
+// 自定义拦截器
+@Injectable()
+export class LoggingInterceptor implements Interceptor {
+  async intercept(context: ExecutionContext, next: CallHandler): Promise<any> {
+    const start = Date.now();
+    console.log(`请求前: ${context.getRequest().method} ${context.getRequest().url}`);
+    
+    const result = await next.handle();
+    
+    const duration = Date.now() - start;
+    console.log(`请求后: ${duration}ms`);
+    
+    return result;
+  }
+}
+
+// 应用拦截器到特定方法
+@Controller('/api/users')
+export class UsersController {
+  @Get()
+  @UseInterceptors(LoggingInterceptor)
+  findAll() {
+    return this.usersService.findAll();
+  }
+}
+
+// 全局应用拦截器
+const app = new RapidoApplication(AppModule);
+app.useGlobalInterceptors(new LoggingInterceptor());
+```
+
+### 生命周期钩子
+
+```typescript
+import { OnModuleInit, OnApplicationBootstrap, OnModuleDestroy } from '@rapidojs/core';
+
+@Injectable()
+export class DatabaseService implements OnModuleInit, OnApplicationBootstrap, OnModuleDestroy {
+  private connection: any;
+
+  async onModuleInit() {
+    console.log('DatabaseService: 模块初始化');
+    // 初始化数据库连接
+    this.connection = await this.createConnection();
+  }
+
+  async onApplicationBootstrap() {
+    console.log('DatabaseService: 应用启动完成');
+    // 运行数据库迁移或种子数据
+    await this.runMigrations();
+  }
+
+  async onModuleDestroy() {
+    console.log('DatabaseService: 模块销毁');
+    // 清理数据库连接
+    await this.connection.close();
+  }
+
+  private async createConnection() {
+    // 数据库连接逻辑
+  }
+
+  private async runMigrations() {
+    // 迁移逻辑
+  }
+}
+```
+
+### 健康检查模块
+
+```typescript
+import { HealthModule } from '@rapidojs/core';
+
+@Module({
+  imports: [HealthModule],
+})
+export class AppModule {}
+
+// 可用端点：
+// GET /health - 基础健康检查
+// GET /health/detailed - 详细系统信息
+// GET /health/readiness - Kubernetes 就绪探针
+// GET /health/liveness - Kubernetes 存活探针
+```
+
 ## 📊 性能表现
 
 | 框架 | 每秒请求数 (RPS) | 延迟 (ms) | 内存使用 (MB) |
@@ -302,7 +430,7 @@ export class ApiController {
 
 ## 🛠️ CLI 工具
 
-```bash
+``bash
 # 全局安装 CLI
 pnpm add -g @rapidojs/cli
 
@@ -327,6 +455,7 @@ rapidojs/
 ├── packages/                    # 核心包
 │   ├── core/                   # @rapidojs/core
 │   ├── config/                 # @rapidojs/config
+│   ├── auth/                   # @rapidojs/auth
 │   └── cli/                    # @rapidojs/cli
 ├── apps/                       # 示例应用
 │   ├── example-api/           # API 示例
@@ -338,7 +467,7 @@ rapidojs/
 
 ## 🚧 开发进度
 
-### ✅ 已完成 (v0.4)
+### ✅ 已完成 (v1.1.0 "武库")
 
 - [x] **基础装饰器系统** - `@Controller`, `@Get`, `@Post` 等
 - [x] **参数装饰器** - `@Param`, `@Query`, `@Body`, `@Headers`
@@ -348,19 +477,24 @@ rapidojs/
 - [x] **异常处理** - `HttpException`, `BadRequestException` 等
 - [x] **配置管理** - `@rapidojs/config` 包
 - [x] **CLI 工具** - 项目生成和管理
-- [x] **测试覆盖** - 89.22% 测试覆盖率
+- [x] **认证与授权** - `@rapidojs/auth` 包，支持 JWT
+- [x] **守卫系统** - `@UseGuards`, `@Public`, `@CurrentUser` 装饰器
+- [x] **拦截器系统** - `@UseInterceptors`，方法/类/全局拦截器
+- [x] **生命周期钩子** - `OnModuleInit`, `OnApplicationBootstrap` 等
+- [x] **健康检查模块** - 内置健康监控端点
+- [x] **测试覆盖** - 全面的测试套件，477 个测试通过
 
-### 🔄 开发中 (v1.0)
+### 🔄 开发中 (v1.1.0 "武库")
 
-- [ ] API 冻结与稳定性测试
+- [ ] 任务调度 `@rapidojs/schedule`
+- [ ] CLI 功能增强 (`add`, `g <schematic>`)
 - [ ] 完整文档站点
-- [ ] 示例项目和最佳实践
-- [ ] 性能基准测试
 
-### 🎯 未来计划 (v2.0+)
+### 🎯 未来计划 (v1.2.0 "数据引擎")
 
-- [ ] 中间件系统
-- [ ] 守卫 (Guards) 和拦截器 (Interceptors)
+- [ ] 数据库集成 `@rapidojs/typeorm`
+- [ ] 缓存模块 `@rapidojs/redis`
+- [ ] 官方示例项目
 - [ ] WebSocket 支持
 - [ ] GraphQL 集成
 - [ ] 微服务支持

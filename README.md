@@ -25,6 +25,8 @@
 - 📦 **Modular Architecture** - Dependency injection based on `tsyringe`, building testable and maintainable applications
 - ⚡ **ESM Native** - Modern ES module support, embracing future standards
 - 🛠️ **Developer Friendly** - Built-in CLI tools for one-click project scaffolding
+- 🔐 **Authentication & Authorization** - Built-in JWT authentication with guards and strategy pattern
+- 🛡️ **Security** - Guard system for route protection and public route exemptions
 
 ## 🚀 Quick Start
 
@@ -289,6 +291,132 @@ export class ApiController {
 }
 ```
 
+### Authentication & Authorization
+
+```typescript
+import { AuthModule, JwtAuthGuard } from '@rapidojs/auth';
+import { UseGuards, Public, CurrentUser } from '@rapidojs/common';
+
+@Module({
+  imports: [
+    AuthModule.forRoot({
+      secret: 'my-jwt-secret-key',
+      sign: { expiresIn: '1d' },
+    }),
+  ],
+})
+export class AppModule {}
+
+@Controller('/api/auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  // Public route - no authentication required
+  @Public()
+  @Post('/login')
+  async login(@Body() credentials: LoginDto) {
+    return this.authService.login(credentials);
+  }
+
+  // Protected route - requires valid JWT
+  @UseGuards(JwtAuthGuard)
+  @Get('/profile')
+  getProfile(@CurrentUser() user: User) {
+    return user;
+  }
+}
+```
+
+### Interceptors System
+
+```typescript
+import { Interceptor, ExecutionContext, CallHandler, UseInterceptors } from '@rapidojs/core';
+
+// Custom interceptor
+@Injectable()
+export class LoggingInterceptor implements Interceptor {
+  async intercept(context: ExecutionContext, next: CallHandler): Promise<any> {
+    const start = Date.now();
+    console.log(`Before: ${context.getRequest().method} ${context.getRequest().url}`);
+    
+    const result = await next.handle();
+    
+    const duration = Date.now() - start;
+    console.log(`After: ${duration}ms`);
+    
+    return result;
+  }
+}
+
+// Apply interceptor to specific method
+@Controller('/api/users')
+export class UsersController {
+  @Get()
+  @UseInterceptors(LoggingInterceptor)
+  findAll() {
+    return this.usersService.findAll();
+  }
+}
+
+// Apply interceptor globally
+const app = new RapidoApplication(AppModule);
+app.useGlobalInterceptors(new LoggingInterceptor());
+```
+
+### Lifecycle Hooks
+
+```typescript
+import { OnModuleInit, OnApplicationBootstrap, OnModuleDestroy } from '@rapidojs/core';
+
+@Injectable()
+export class DatabaseService implements OnModuleInit, OnApplicationBootstrap, OnModuleDestroy {
+  private connection: any;
+
+  async onModuleInit() {
+    console.log('DatabaseService: Module initialized');
+    // Initialize database connection
+    this.connection = await this.createConnection();
+  }
+
+  async onApplicationBootstrap() {
+    console.log('DatabaseService: Application bootstrapped');
+    // Run database migrations or seed data
+    await this.runMigrations();
+  }
+
+  async onModuleDestroy() {
+    console.log('DatabaseService: Module destroyed');
+    // Clean up database connection
+    await this.connection.close();
+  }
+
+  private async createConnection() {
+    // Database connection logic
+  }
+
+  private async runMigrations() {
+    // Migration logic
+  }
+}
+```
+
+### Health Check Module
+
+```typescript
+import { HealthModule } from '@rapidojs/core';
+
+@Module({
+  imports: [HealthModule],
+})
+export class AppModule {}
+
+// Available endpoints:
+// GET /health - Basic health check
+// GET /health/detailed - Detailed system information
+// GET /health/readiness - Kubernetes readiness probe
+// GET /health/liveness - Kubernetes liveness probe
+```
+
 ## 📊 Performance Benchmark
 
 | Framework | Requests/sec (RPS) | Latency (ms) | Memory Usage (MB) |
@@ -327,6 +455,7 @@ rapidojs/
 ├── packages/                    # Core packages
 │   ├── core/                   # @rapidojs/core
 │   ├── config/                 # @rapidojs/config
+│   ├── auth/                   # @rapidojs/auth
 │   └── cli/                    # @rapidojs/cli
 ├── apps/                       # Example applications
 │   ├── example-api/           # API example
@@ -337,7 +466,7 @@ rapidojs/
 
 ## 🚧 Development Progress
 
-### ✅ Completed (v0.4)
+### ✅ Completed (v1.1.0 "武库")
 
 - [x] **Basic Decorator System** - `@Controller`, `@Get`, `@Post`, etc.
 - [x] **Parameter Decorators** - `@Param`, `@Query`, `@Body`, `@Headers`
@@ -347,19 +476,24 @@ rapidojs/
 - [x] **Exception Handling** - `HttpException`, `BadRequestException`, etc.
 - [x] **Configuration Management** - `@rapidojs/config` package
 - [x] **CLI Tools** - Project generation and management
-- [x] **Test Coverage** - 89.22% test coverage
+- [x] **Authentication & Authorization** - `@rapidojs/auth` package with JWT support
+- [x] **Guards System** - `@UseGuards`, `@Public`, `@CurrentUser` decorators
+- [x] **Interceptors System** - `@UseInterceptors`, method/class/global interceptors
+- [x] **Lifecycle Hooks** - `OnModuleInit`, `OnApplicationBootstrap`, etc.
+- [x] **Health Check Module** - Built-in health monitoring endpoints
+- [x] **Test Coverage** - Comprehensive test suite with 477 passing tests
 
-### 🔄 In Progress (v1.0)
+### 🔄 In Progress (v1.1.0 "武库")
 
-- [ ] API freeze and stability testing
+- [ ] Task scheduling with `@rapidojs/schedule`
+- [ ] Enhanced CLI features (`add`, `g <schematic>`)
 - [ ] Complete documentation site
-- [ ] Example projects and best practices
-- [ ] Performance benchmark testing
 
-### 🎯 Future Plans (v2.0+)
+### 🎯 Future Plans (v1.2.0 "数据引擎")
 
-- [ ] Middleware system
-- [ ] Guards and Interceptors
+- [ ] Database integration with `@rapidojs/typeorm`
+- [ ] Cache module with `@rapidojs/redis`
+- [ ] Official example projects
 - [ ] WebSocket support
 - [ ] GraphQL integration
 - [ ] Microservices support
@@ -428,4 +562,4 @@ This project is licensed under the [MIT License](./LICENSE).
     <a href="https://github.com/rapidojs/rapidojs/issues">Report Issues</a> ·
     <a href="https://github.com/rapidojs/rapidojs/discussions">Join Discussion</a>
   </p>
-</div> 
+</div>

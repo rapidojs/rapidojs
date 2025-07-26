@@ -23,8 +23,11 @@ interface IConfigService {
 export class ConfigService implements IConfigService {
   private configData: Record<string, any> = {};
   private options: ConfigModuleOptions;
+  private instanceId: string;
 
   constructor(options: ConfigModuleOptions = {}) {
+    this.instanceId = Math.random().toString(36).substr(2, 9);
+    
     this.options = {
       isGlobal: true,
       envFilePath: '.env',

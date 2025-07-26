@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { describe, it, expect } from 'vitest';
-import { Query, Param, Body, Headers, Req, Res } from '@rapidojs/common';
+import { Query, Param, Body, Headers, Req, Res, ROUTE_ARGS_METADATA } from '@rapidojs/common';
 import { METADATA_KEY } from '../constants.js';
 import { ParamType } from '@rapidojs/common';
 import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
@@ -24,7 +24,7 @@ describe('参数装饰器边界情况', () => {
       }).not.toThrow();
       
       // 应该没有设置任何元数据
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, {}, undefined as any);
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, {}, undefined as any);
       expect(metadata).toBeUndefined();
     });
 
@@ -35,7 +35,7 @@ describe('参数装饰器边界情况', () => {
         decorator({}, undefined, 0);
       }).not.toThrow();
       
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, {}, undefined as any);
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, {}, undefined as any);
       expect(metadata).toBeUndefined();
     });
 
@@ -46,7 +46,7 @@ describe('参数装饰器边界情况', () => {
         decorator({}, undefined, 0);
       }).not.toThrow();
       
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, {}, undefined as any);
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, {}, undefined as any);
       expect(metadata).toBeUndefined();
     });
 
@@ -57,25 +57,29 @@ describe('参数装饰器边界情况', () => {
         decorator({}, undefined, 0);
       }).not.toThrow();
       
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, {}, undefined as any);
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, {}, undefined as any);
       expect(metadata).toBeUndefined();
     });
 
     it('Req 装饰器应该处理 undefined propertyKey', () => {
+      const decorator = Req();
+      
       expect(() => {
-        Req({}, undefined, 0);
+        decorator({}, undefined, 0);
       }).not.toThrow();
       
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, {}, undefined as any);
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, {}, undefined as any);
       expect(metadata).toBeUndefined();
     });
 
     it('Res 装饰器应该处理 undefined propertyKey', () => {
+      const decorator = Res();
+      
       expect(() => {
-        Res({}, undefined, 0);
+        decorator({}, undefined, 0);
       }).not.toThrow();
       
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, {}, undefined as any);
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, {}, undefined as any);
       expect(metadata).toBeUndefined();
     });
   });
@@ -88,14 +92,14 @@ describe('参数装饰器边界情况', () => {
         [symbolKey](@Query('id') id: string) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, symbolKey);
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, symbolKey);
       
       expect(metadata).toBeDefined();
-      expect(metadata).toHaveLength(1);
-      expect(metadata[0]).toEqual({
+      expect(Object.keys(metadata)).toHaveLength(1);
+      expect(metadata[`${ParamType.QUERY}:0`]).toMatchObject({
         index: 0,
         type: ParamType.QUERY,
-        key: 'id'
+        data: 'id'
       });
     });
 
@@ -107,7 +111,7 @@ describe('参数装饰器边界情况', () => {
         [symbolKey](@Param('id', testPipe) id: string) {}
       }
 
-      const paramMetadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, symbolKey);
+      const paramMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, symbolKey);
       const pipeMetadata = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, TestController.prototype, symbolKey);
       
       expect(paramMetadata).toBeDefined();
@@ -124,74 +128,72 @@ describe('参数装饰器边界情况', () => {
           @Query('page') page: string,
           @Body() body: any,
           @Headers('authorization') auth: string,
-          @Req request: any,
-          @Res response: any
+          @Req() request: any,
+          @Res() response: any
         ) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'complexMethod');
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'complexMethod');
       
       expect(metadata).toBeDefined();
-      expect(metadata).toHaveLength(6);
+      expect(Object.keys(metadata)).toHaveLength(6);
       
       // 验证每个参数的元数据
-      expect(metadata.find((p: any) => p.index === 0)).toEqual({
+      expect(metadata[`${ParamType.PARAM}:0`]).toMatchObject({
         index: 0,
         type: ParamType.PARAM,
-        key: 'id'
+        data: 'id'
       });
       
-      expect(metadata.find((p: any) => p.index === 1)).toEqual({
+      expect(metadata[`${ParamType.QUERY}:1`]).toMatchObject({
         index: 1,
         type: ParamType.QUERY,
-        key: 'page'
+        data: 'page'
       });
       
-      expect(metadata.find((p: any) => p.index === 2)).toEqual({
+      expect(metadata[`${ParamType.BODY}:2`]).toMatchObject({
         index: 2,
-        type: ParamType.BODY,
-        key: undefined
+        type: ParamType.BODY
       });
       
-      expect(metadata.find((p: any) => p.index === 3)).toEqual({
+      expect(metadata[`${ParamType.HEADERS}:3`]).toMatchObject({
         index: 3,
         type: ParamType.HEADERS,
-        key: 'authorization'
+        data: 'authorization'
       });
       
-      expect(metadata.find((p: any) => p.index === 4)).toEqual({
+      expect(metadata[`${ParamType.REQUEST}:4`]).toMatchObject({
         index: 4,
-        type: ParamType.REQUEST,
-        key: undefined
+        type: ParamType.REQUEST
       });
       
-      expect(metadata.find((p: any) => p.index === 5)).toEqual({
+      expect(metadata[`${ParamType.RESPONSE}:5`]).toMatchObject({
         index: 5,
-        type: ParamType.RESPONSE,
-        key: undefined
+        type: ParamType.RESPONSE
       });
     });
 
-         it('应该正确处理带管道的多个参数', () => {
-       const testPipe1 = new TestPipe();
-       const testPipe2 = new ParseIntPipe();
-       
-       class TestController {
-         pipeMethod(
-           @Param('id', testPipe1) id: string,
-           @Query('page', testPipe2) page: number,
-           @Body() body: any
-         ) {}
-       }
+    it('应该正确处理带管道的多个参数', () => {
+      const testPipe1 = new TestPipe();
+      const testPipe2 = new ParseIntPipe();
+      
+      class TestController {
+        pipeMethod(
+          @Param('id', testPipe1) id: string,
+          @Query('page', testPipe2) page: number,
+          @Body() body: any
+        ) {}
+      }
 
-       const paramMetadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'pipeMethod');
-       const pipeMetadata = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, TestController.prototype, 'pipeMethod');
-       
-       expect(paramMetadata).toHaveLength(3);
-       expect(pipeMetadata[0]).toEqual([testPipe1]);
-       expect(pipeMetadata[1]).toEqual([testPipe2]);
-       // Body 装饰器没有管道参数
-     });
+      const paramMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'pipeMethod');
+      const pipeMetadata = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, TestController.prototype, 'pipeMethod');
+      
+      expect(Object.keys(paramMetadata)).toHaveLength(3);
+      expect(pipeMetadata[0]).toEqual([testPipe1]);
+      expect(pipeMetadata[1]).toEqual([testPipe2]);
+      // Body 装饰器没有管道参数，所以 pipeMetadata[2] 应该是 undefined
+      expect(pipeMetadata[2]).toBeUndefined();
+    });
   });
 
   describe('重复装饰器应用', () => {
@@ -201,16 +203,16 @@ describe('参数装饰器边界情况', () => {
         method2(@Param('p1') p1: string, @Query('q2') q2: string) {}
       }
 
-      const method1Metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method1');
-      const method2Metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method2');
+      const method1Metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method1');
+      const method2Metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method2');
       
-      expect(method1Metadata).toHaveLength(1);
-      expect(method2Metadata).toHaveLength(2);
+      expect(Object.keys(method1Metadata)).toHaveLength(1);
+      expect(Object.keys(method2Metadata)).toHaveLength(2);
       
       // 确保方法间元数据不会相互影响
-      expect(method1Metadata[0].key).toBe('q1');
-      expect(method2Metadata.find((p: any) => p.index === 0).key).toBe('p1');
-      expect(method2Metadata.find((p: any) => p.index === 1).key).toBe('q2');
+      expect(method1Metadata[`${ParamType.QUERY}:0`].data).toBe('q1');
+      expect(method2Metadata[`${ParamType.PARAM}:0`].data).toBe('p1');
+      expect(method2Metadata[`${ParamType.QUERY}:1`].data).toBe('q2');
     });
   });
 
@@ -220,13 +222,13 @@ describe('参数装饰器边界情况', () => {
         method(@Query() query: any) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
       
-      expect(metadata).toHaveLength(1);
-      expect(metadata[0]).toEqual({
+      expect(Object.keys(metadata)).toHaveLength(1);
+      expect(metadata[`${ParamType.QUERY}:0`]).toMatchObject({
         index: 0,
         type: ParamType.QUERY,
-        key: undefined
+        data: undefined
       });
     });
 
@@ -235,13 +237,13 @@ describe('参数装饰器边界情况', () => {
         method(@Param() param: any) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
       
-      expect(metadata).toHaveLength(1);
-      expect(metadata[0]).toEqual({
+      expect(Object.keys(metadata)).toHaveLength(1);
+      expect(metadata[`${ParamType.PARAM}:0`]).toMatchObject({
         index: 0,
         type: ParamType.PARAM,
-        key: undefined
+        data: undefined
       });
     });
 
@@ -250,13 +252,13 @@ describe('参数装饰器边界情况', () => {
         method(@Headers() headers: any) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
       
-      expect(metadata).toHaveLength(1);
-      expect(metadata[0]).toEqual({
+      expect(Object.keys(metadata)).toHaveLength(1);
+      expect(metadata[`${ParamType.HEADERS}:0`]).toMatchObject({
         index: 0,
         type: ParamType.HEADERS,
-        key: undefined
+        data: undefined
       });
     });
 
@@ -265,13 +267,13 @@ describe('参数装饰器边界情况', () => {
         method(@Body() body: any) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
       
-      expect(metadata).toHaveLength(1);
-      expect(metadata[0]).toEqual({
+      expect(Object.keys(metadata)).toHaveLength(1);
+      expect(metadata[`${ParamType.BODY}:0`]).toMatchObject({
         index: 0,
         type: ParamType.BODY,
-        key: undefined
+        data: undefined
       });
     });
   });
@@ -301,37 +303,37 @@ describe('参数装饰器边界情况', () => {
       expect(pipeMetadata[0]).toEqual([pipeInstance]);
     });
 
-         it('应该处理 undefined 管道', () => {
-       class TestController {
-         method(@Query('value', undefined as any) value: any) {}
-       }
+    it('应该处理 undefined 管道', () => {
+      class TestController {
+        method(@Query('value', undefined as any) value: any) {}
+      }
 
-       const paramMetadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
-       const pipeMetadata = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, TestController.prototype, 'method');
-       
-       expect(paramMetadata).toBeDefined();
-       if (pipeMetadata) {
-         expect(pipeMetadata[0]).toEqual([undefined]);
-       }
-     });
+      const paramMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
+      const pipeMetadata = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, TestController.prototype, 'method');
+      
+      expect(paramMetadata).toBeDefined();
+      // undefined 会被当作有效的管道参数存储
+      expect(pipeMetadata).toBeDefined();
+      expect(pipeMetadata[0]).toEqual([undefined]);
+    });
 
-         it('Body 装饰器应该支持管道参数', () => {
-       const testPipe = new TestPipe();
-       
-       class TestController {
-         method(@Body(undefined, testPipe) body: any) {}
-       }
+    it('Body 装饰器应该支持管道参数', () => {
+      const testPipe = new TestPipe();
+      
+      class TestController {
+        method(@Body(testPipe) body: any) {}
+      }
 
-       const paramMetadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
-       const pipeMetadata = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, TestController.prototype, 'method');
-       
-       expect(paramMetadata[0]).toEqual({
-         index: 0,
-         type: ParamType.BODY,
-         key: undefined
-       });
-       expect(pipeMetadata[0]).toEqual([testPipe]);
-     });
+      const paramMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
+      const pipeMetadata = Reflect.getMetadata(METADATA_KEY.PARAM_PIPES, TestController.prototype, 'method');
+      
+      expect(paramMetadata[`${ParamType.BODY}:0`]).toMatchObject({
+        index: 0,
+        type: ParamType.BODY,
+        data: undefined
+      });
+      expect(pipeMetadata[0]).toEqual([testPipe]);
+    });
   });
 
   describe('特殊键值', () => {
@@ -340,9 +342,9 @@ describe('参数装饰器边界情况', () => {
         method(@Query('') query: any) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
       
-      expect(metadata[0].key).toBe('');
+      expect(metadata[`${ParamType.QUERY}:0`].data).toBe('');
     });
 
     it('应该支持数字字符串作为键', () => {
@@ -350,9 +352,9 @@ describe('参数装饰器边界情况', () => {
         method(@Param('123') param: any) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
       
-      expect(metadata[0].key).toBe('123');
+      expect(metadata[`${ParamType.PARAM}:0`].data).toBe('123');
     });
 
     it('应该支持包含特殊字符的键', () => {
@@ -360,9 +362,9 @@ describe('参数装饰器边界情况', () => {
         method(@Headers('x-custom-header') header: any) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
       
-      expect(metadata[0].key).toBe('x-custom-header');
+      expect(metadata[`${ParamType.HEADERS}:0`].data).toBe('x-custom-header');
     });
 
     it('应该支持 Unicode 字符的键', () => {
@@ -370,9 +372,9 @@ describe('参数装饰器边界情况', () => {
         method(@Query('用户名') username: any) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
       
-      expect(metadata[0].key).toBe('用户名');
+      expect(metadata[`${ParamType.QUERY}:0`].data).toBe('用户名');
     });
   });
 
@@ -386,35 +388,35 @@ describe('参数装饰器边界情况', () => {
         extendedMethod(@Param('id') id: string) {}
       }
 
-      const baseMetadata = Reflect.getMetadata(METADATA_KEY.PARAMS, BaseController.prototype, 'baseMethod');
-      const extendedMetadata = Reflect.getMetadata(METADATA_KEY.PARAMS, ExtendedController.prototype, 'extendedMethod');
+      const baseMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, BaseController, 'baseMethod');
+      const extendedMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, ExtendedController, 'extendedMethod');
       
       expect(baseMetadata).toBeDefined();
       expect(extendedMetadata).toBeDefined();
-      expect(baseMetadata[0].key).toBe('base');
-      expect(extendedMetadata[0].key).toBe('id');
+      expect(baseMetadata[`${ParamType.QUERY}:0`].data).toBe('base');
+      expect(extendedMetadata[`${ParamType.PARAM}:0`].data).toBe('id');
     });
 
-         it('子类可以重写父类方法的参数装饰器', () => {
-       class BaseController {
-         baseMethod(@Query('base') param: string) {}
-       }
+    it('子类可以重写父类方法的参数装饰器', () => {
+      class BaseController {
+        baseMethod(@Query('base') param: string) {}
+      }
 
-       class ExtendedController extends BaseController {
-         extendedMethod(@Param('override') param: string) {}
-       }
+      class ExtendedController extends BaseController {
+        extendedMethod(@Param('override') param: string) {}
+      }
 
-       const baseMetadata = Reflect.getMetadata(METADATA_KEY.PARAMS, BaseController.prototype, 'baseMethod');
-       const extendedMetadata = Reflect.getMetadata(METADATA_KEY.PARAMS, ExtendedController.prototype, 'extendedMethod');
-       
-       expect(baseMetadata).toBeDefined();
-       expect(baseMetadata[0].type).toBe(ParamType.QUERY);
-       expect(baseMetadata[0].key).toBe('base');
-       
-       expect(extendedMetadata).toBeDefined();
-       expect(extendedMetadata[0].type).toBe(ParamType.PARAM);
-       expect(extendedMetadata[0].key).toBe('override');
-     });
+      const baseMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, BaseController, 'baseMethod');
+      const extendedMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, ExtendedController, 'extendedMethod');
+      
+      expect(baseMetadata).toBeDefined();
+      expect(baseMetadata[`${ParamType.QUERY}:0`].type).toBe(ParamType.QUERY);
+      expect(baseMetadata[`${ParamType.QUERY}:0`].data).toBe('base');
+      
+      expect(extendedMetadata).toBeDefined();
+      expect(extendedMetadata[`${ParamType.PARAM}:0`].type).toBe(ParamType.PARAM);
+      expect(extendedMetadata[`${ParamType.PARAM}:0`].data).toBe('override');
+    });
   });
 
   describe('元数据完整性', () => {
@@ -427,35 +429,31 @@ describe('参数装饰器边界情况', () => {
         ) {}
       }
 
-      const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
       
-      expect(metadata).toHaveLength(2); // 只有装饰器的参数有元数据
-      expect(metadata.find((p: any) => p.index === 0)?.key).toBe('id');
-      expect(metadata.find((p: any) => p.index === 2)?.key).toBe('page');
-      expect(metadata.find((p: any) => p.index === 1)).toBeUndefined(); // 无装饰器的参数
+      expect(Object.keys(metadata)).toHaveLength(2); // 只有装饰器的参数有元数据
+      expect(metadata[`${ParamType.PARAM}:0`]?.data).toBe('id');
+      expect(metadata[`${ParamType.QUERY}:2`]?.data).toBe('page');
+      expect(metadata[`${ParamType.PARAM}:1`]).toBeUndefined(); // 无装饰器的参数
     });
 
-         it('元数据应该包含正确的参数信息', () => {
-       class TestController {
-         method(
-           @Query('a') a: string,
-           @Param('b') b: string,
-           @Body() c: any
-         ) {}
-       }
+    it('元数据应该包含正确的参数信息', () => {
+      class TestController {
+        method(
+          @Query('a') a: string,
+          @Param('b') b: string,
+          @Body() c: any
+        ) {}
+      }
 
-       const metadata = Reflect.getMetadata(METADATA_KEY.PARAMS, TestController.prototype, 'method');
-       
-       expect(metadata).toHaveLength(3);
-       
-       // 查找对应索引的参数
-       const queryParam = metadata.find((p: any) => p.index === 0);
-       const paramParam = metadata.find((p: any) => p.index === 1);
-       const bodyParam = metadata.find((p: any) => p.index === 2);
-       
-       expect(queryParam).toEqual({ index: 0, type: ParamType.QUERY, key: 'a' });
-       expect(paramParam).toEqual({ index: 1, type: ParamType.PARAM, key: 'b' });
-       expect(bodyParam).toEqual({ index: 2, type: ParamType.BODY, key: undefined });
-     });
+      const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'method');
+      
+      expect(Object.keys(metadata)).toHaveLength(3);
+      
+      // 验证对应索引的参数
+      expect(metadata[`${ParamType.QUERY}:0`]).toMatchObject({ index: 0, type: ParamType.QUERY, data: 'a' });
+      expect(metadata[`${ParamType.PARAM}:1`]).toMatchObject({ index: 1, type: ParamType.PARAM, data: 'b' });
+      expect(metadata[`${ParamType.BODY}:2`]).toMatchObject({ index: 2, type: ParamType.BODY });
+    });
   });
-}); 
+});

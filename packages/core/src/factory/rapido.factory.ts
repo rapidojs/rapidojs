@@ -3,15 +3,13 @@ import { ControllerRegistrar } from './controller-registrar.js';
 import { DIContainer } from '../di/container.js';
 import { Type } from '../types.js';
 import { AppConfig, StaticFileConfig } from '../interfaces/app-config.interface.js';
-import { MODULE_METADATA } from '../constants.js';
+import { MODULE_METADATA, EXCEPTION_FILTER_METADATA } from '../constants.js';
 import { HttpException } from '../exceptions/http-exception.js';
-import { HttpArgumentsHostImpl } from '../helpers/http-arguments-host.js';
-import { RapidoApp, CanActivate } from '../interfaces/rapido-app.interface.js';
+import { RapidoApp } from '../interfaces/rapido-app.interface.js';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
 import { PipeTransform } from '../pipes/pipe-transform.interface.js';
-import { HttpExecutionContext } from '../helpers/execution-context.js';
-import { EXCEPTION_FILTER_METADATA } from '../constants.js';
-import { LoggerService } from '@rapidojs/common';
+import { CanActivate, LoggerService, Interceptor, OnApplicationBootstrap, BeforeApplicationShutdown, OnModuleInit, OnModuleDestroy } from '@rapidojs/common';
+import { HttpExecutionContextImpl } from '../helpers/execution-context-impl.js';
 
 /**
  * The main factory for creating Rapido.js applications.
@@ -28,6 +26,9 @@ export class RapidoFactory {
     const app = fastify(config?.fastifyOptions) as unknown as FastifyInstance;
     const container = new DIContainer();
 
+    // Register the app instance so it can be injected
+    container.registerProvider({ provide: 'APP_INSTANCE', useValue: app });
+
     // Set the global logger as soon as the app instance is created.
     // This ensures any LoggerService instantiated hereafter (manually or by DI)
     // gets the correct logger instance.
@@ -39,6 +40,7 @@ export class RapidoFactory {
     let globalFilters: (ExceptionFilter | Type<ExceptionFilter>)[] = [];
     let globalPipes: (PipeTransform | Type<PipeTransform>)[] = [];
     let globalGuards: (CanActivate | Type<CanActivate>)[] = [];
+    let globalInterceptors: (Interceptor | Type<Interceptor>)[] = [];
 
 
     const registerStaticConfig = async (staticConfig: StaticFileConfig) => {
@@ -68,6 +70,25 @@ export class RapidoFactory {
     };
 
     await container.registerModule(rootModule);
+
+    // Bootstrap eager providers
+    const bootstrapProviders = container.getAllBootstrapProviders(rootModule);
+    for (const provider of bootstrapProviders) {
+      await container.resolve(provider);
+    }
+
+    // Call OnModuleInit lifecycle hooks
+    const allProviders = container.getAllProviders(rootModule);
+    for (const provider of allProviders) {
+      try {
+        const instance = await container.resolve(provider);
+        if (instance && typeof (instance as any).onModuleInit === 'function') {
+          await (instance as OnModuleInit).onModuleInit();
+        }
+      } catch (error) {
+        // Ignore resolution errors for optional lifecycle hooks
+      }
+    }
 
     const controllers = container.getControllers(rootModule);
 
@@ -105,6 +126,17 @@ export class RapidoFactory {
       return guard;
     };
 
+    const resolveInterceptor = async (interceptor: Interceptor | Type<Interceptor>): Promise<Interceptor> => {
+      if (typeof interceptor === 'function') {
+        try {
+          return await container.resolve(interceptor);
+        } catch {
+          return new interceptor();
+        }
+      }
+      return interceptor;
+    };
+
     const canHandleException = (filter: ExceptionFilter, exception: Error): boolean => {
       const filterClass = filter.constructor as Type<ExceptionFilter>;
       const exceptionMetadata = Reflect.getMetadata(EXCEPTION_FILTER_METADATA, filterClass);
@@ -129,7 +161,7 @@ export class RapidoFactory {
         for (const filter of globalFilters) {
           const filterInstance = await resolveFilter(filter);
           if (canHandleException(filterInstance, error)) {
-            const host = new HttpArgumentsHostImpl(request, reply);
+            const host = new HttpExecutionContextImpl(request, reply, null, null);
             return filterInstance.catch(error, host);
           }
         }
@@ -138,7 +170,7 @@ export class RapidoFactory {
         const containerFilter = container.findFilter(error);
         if (containerFilter) {
           const instance = await container.resolve(containerFilter);
-          const host = new HttpArgumentsHostImpl(request, reply);
+          const host = new HttpExecutionContextImpl(request, reply, null, null);
           return instance.catch(error, host);
         }
 
@@ -189,6 +221,11 @@ export class RapidoFactory {
       return app as RapidoApp;
     };
 
+    (app as any).useGlobalInterceptors = (...interceptors: (Interceptor | Type<Interceptor>)[]): RapidoApp => {
+      globalInterceptors.push(...interceptors);
+      return app as RapidoApp;
+    };
+
     (app as any).getGlobalFilters = (): (ExceptionFilter | Type<ExceptionFilter>)[] => {
       return [...globalFilters];
     };
@@ -201,13 +238,17 @@ export class RapidoFactory {
       return [...globalGuards];
     };
 
+    (app as any).getGlobalInterceptors = (): (Interceptor | Type<Interceptor>)[] => {
+      return [...globalInterceptors];
+    };
+
     // 添加访问全局管道和守卫的方法给 ControllerRegistrar 使用
     (app as any).executeGlobalGuards = async (request: FastifyRequest, reply: FastifyReply): Promise<boolean> => {
       if (globalGuards.length === 0) {
         return true;
       }
 
-      const context = new HttpExecutionContext(request, reply);
+      const context = new HttpExecutionContextImpl(request, reply, null, null);
 
       for (const guard of globalGuards) {
         const guardInstance = await resolveGuard(guard);
@@ -232,6 +273,15 @@ export class RapidoFactory {
       return result;
     };
 
+    (app as any).getGlobalInterceptorsInstances = async (): Promise<Interceptor[]> => {
+      const instances: Interceptor[] = [];
+      for (const interceptor of globalInterceptors) {
+        const instance = await resolveInterceptor(interceptor);
+        instances.push(instance);
+      }
+      return instances;
+    };
+
     // 立即设置错误处理器
     setupErrorHandler();
 
@@ -241,6 +291,87 @@ export class RapidoFactory {
 
     // Attach the container to the app instance
     (app as any).container = container;
+
+    // Add lifecycle hook methods
+    (app as any).callOnApplicationBootstrap = async (): Promise<void> => {
+      const allProviders = container.getAllProviders(rootModule);
+      for (const provider of allProviders) {
+        try {
+          const instance = await container.resolve(provider);
+          if (instance && typeof (instance as any).onApplicationBootstrap === 'function') {
+            await (instance as OnApplicationBootstrap).onApplicationBootstrap();
+          }
+        } catch (error) {
+          // Ignore resolution errors for optional lifecycle hooks
+        }
+      }
+    };
+
+    (app as any).callBeforeApplicationShutdown = async (): Promise<void> => {
+      const allProviders = container.getAllProviders(rootModule);
+      for (const provider of allProviders) {
+        try {
+          const instance = await container.resolve(provider);
+          if (instance && typeof (instance as any).beforeApplicationShutdown === 'function') {
+            await (instance as BeforeApplicationShutdown).beforeApplicationShutdown();
+          }
+        } catch (error) {
+          // Ignore resolution errors for optional lifecycle hooks
+        }
+      }
+    };
+
+    (app as any).callOnModuleDestroy = async (): Promise<void> => {
+      const allProviders = container.getAllProviders(rootModule);
+      for (const provider of allProviders) {
+        try {
+          const instance = await container.resolve(provider);
+          if (instance && typeof (instance as any).onModuleDestroy === 'function') {
+            await (instance as OnModuleDestroy).onModuleDestroy();
+          }
+        } catch (error) {
+          // Ignore resolution errors for optional lifecycle hooks
+        }
+      }
+    };
+
+    // Override the listen method to automatically call lifecycle hooks
+    const originalListen = app.listen.bind(app);
+    (app as any).listen = async (...args: any[]): Promise<string> => {
+      // Call OnApplicationBootstrap before starting the server
+      await (app as any).callOnApplicationBootstrap();
+      
+      // Start the server
+      const address = await originalListen(...args);
+      
+      // Set up graceful shutdown handlers
+      const gracefulShutdown = async (signal: string) => {
+        console.log(`Received ${signal}. Starting graceful shutdown...`);
+        
+        try {
+          // Call BeforeApplicationShutdown lifecycle hooks
+          await (app as any).callBeforeApplicationShutdown();
+          
+          // Call OnModuleDestroy lifecycle hooks
+          await (app as any).callOnModuleDestroy();
+          
+          // Close the server
+          await app.close();
+          
+          console.log('Graceful shutdown completed.');
+          process.exit(0);
+        } catch (error) {
+          console.error('Error during graceful shutdown:', error);
+          process.exit(1);
+        }
+      };
+      
+      // Register signal handlers for graceful shutdown
+      process.once('SIGINT', () => gracefulShutdown('SIGINT'));
+      process.once('SIGTERM', () => gracefulShutdown('SIGTERM'));
+      
+      return address;
+    };
 
     return app as RapidoApp;
   }

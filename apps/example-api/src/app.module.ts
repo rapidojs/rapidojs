@@ -1,4 +1,4 @@
-import { Module } from '@rapidojs/core';
+import { Module, HealthModule } from '@rapidojs/core';
 import { AppController } from './app.controller.js';
 import { ConfigModule } from '@rapidojs/config';
 import { LoggerService } from '@rapidojs/common';
@@ -6,9 +6,12 @@ import { LoggerService } from '@rapidojs/common';
 // Import feature modules
 import { UserModule } from './modules/user/user.module.js';
 import { ProductModule } from './modules/product/product.module.js';
+import { AuthModule as RapidoAuthModule } from '@rapidojs/auth';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { ConfigService } from '@rapidojs/config';
 import { ExceptionsModule } from './modules/exceptions/exceptions.module.js';
 import { ConfigDemoModule } from './modules/config/config.module.js';
+import { LifecycleTestModule } from './modules/lifecycle/lifecycle-test.module.js';
 
 /**
  * 配置验证函数
@@ -33,16 +36,23 @@ function validateConfig(config: Record<string, any>): void {
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: ['.env', '.env.local'],
-      configFilePath: 'config/app.yaml',
-      validationSchema: validateConfig,
-      throwOnMissingFile: false, // 在开发环境中允许文件不存在
+      isGlobal: true,
+      configFilePath: './config/app.yaml',
     }),
+    RapidoAuthModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('JWT_SECRET', 'a-very-secret-key'),
+      }),
+      inject: [ConfigService],
+    }),
+    HealthModule, // 健康检查模块
     UserModule, 
     ProductModule, 
     AuthModule, 
     ExceptionsModule,
     ConfigDemoModule, // 配置演示模块
+    LifecycleTestModule,
   ],
   controllers: [AppController],
   providers: [],

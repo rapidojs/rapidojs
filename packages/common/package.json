@@ -1,6 +1,6 @@
 {
   "name": "@rapidojs/common",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "Common utilities for Rapido.js framework",
   "license": "MIT",
   "repository": {

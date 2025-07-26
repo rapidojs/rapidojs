@@ -1,0 +1,47 @@
+{
+  "name": "@rapidojs/auth",
+  "version": "1.0.5",
+  "description": "Official authentication module for Rapido.js, with built-in support for JWT.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:swc && pnpm run build:types",
+    "build:swc": "swc src -d dist --strip-leading-paths --source-maps --copy-files",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm run build"
+  },
+  "keywords": [
+    "rapidojs",
+    "fastify",
+    "auth",
+    "jwt",
+    "authentication",
+    "guard"
+  ],
+  "author": "Rapido.js Team",
+  "license": "MIT",
+  "dependencies": {
+    "@fastify/jwt": "^9.1.0",
+    "@rapidojs/common": "workspace:*",
+    "@rapidojs/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.9",
+    "fastify": "^5.4.0",
+    "reflect-metadata": "^0.2.2",
+    "tsyringe": "^4.10.0",
+    "typescript": "^5.8.3",
+    "vitest": "^1.6.1"
+  },
+  "peerDependencies": {
+    "fastify": "^5.4.0",
+    "reflect-metadata": "^0.2.x",
+    "tsyringe": "^4.x"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module"
+}

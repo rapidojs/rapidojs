@@ -1,5 +1,6 @@
 import 'reflect-metadata';
-import { Module, Type, Provider } from '@rapidojs/core';
+import { Module } from '@rapidojs/core';
+import { Type, Provider } from '@rapidojs/common';
 import { ConfigService } from './services/config.service.js';
 import { ConfigModuleOptions } from './types.js';
 import { CONFIG_SERVICE_TOKEN } from './constants.js';
@@ -31,7 +32,11 @@ export class ConfigModule {
     })
     class DynamicConfigModule {}
 
-    return DynamicConfigModule;
+    return {
+      module: DynamicConfigModule,
+      providers: [configProvider],
+      exports: [ConfigService],
+    } as any;
   }
 
   /**
@@ -52,6 +57,10 @@ export class ConfigModule {
     })
     class FeatureConfigModule {}
 
-    return FeatureConfigModule;
+    return {
+      module: FeatureConfigModule,
+      providers: [configProvider],
+      exports: [ConfigService],
+    } as any;
   }
 } 
