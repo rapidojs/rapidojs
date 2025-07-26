@@ -1,7 +1,8 @@
 import { createParamDecorator } from './param-decorator.factory.js';
-import { ParamType } from '../types.js';
+import { ParamType } from '../enums.js';
 import { METADATA_KEY } from '../constants.js';
 import { PipeMetadata } from '../interfaces.js';
+import { Inject } from './inject.decorator.js';
 
 // Re-implement all parameter decorators using the factory to ensure consistency
 // with support for NestJS-style pipe parameters
@@ -22,6 +23,14 @@ export const Headers = createParamDecoratorWithPipes((data, ctx) => {
   const request = ctx.switchToHttp().getRequest();
   return data ? request.headers[data as string] : request.headers;
 }, ParamType.HEADERS);
+
+/**
+ * Decorator to inject the Fastify instance.
+ * @deprecated This will be removed in a future version. Use `@Inject('APP_INSTANCE')` instead.
+ */
+export function FastifyApp(): ParameterDecorator {
+  return Inject('APP_INSTANCE');
+}
 
 export const Req = createParamDecorator((data, ctx) => ctx.switchToHttp().getRequest(), ParamType.REQUEST);
 export const Res = createParamDecorator((data, ctx) => ctx.switchToHttp().getResponse(), ParamType.RESPONSE);

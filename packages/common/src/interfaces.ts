@@ -1,3 +1,5 @@
+import { Type, ForwardReference, Provider } from './types.js';
+
 /**
  * Interface that must be implemented by all pipes.
  * Pipes are used to transform and validate data before it reaches the route handler.
@@ -154,3 +156,15 @@ export interface ValidationPipeOptions {
  * Type representing a pipe constructor or instance
  */
 export type PipeMetadata = PipeTransform | (new (...args: any[]) => PipeTransform); 
+
+export interface ModuleMetadata {
+  imports?: Array<Type<any> | DynamicModule | ForwardReference>;
+  controllers?: Type<any>[];
+  providers?: Provider[];
+  exports?: Array<Type<any> | DynamicModule | Provider>;
+  bootstrap?: Array<Type<any> | string>;
+}
+
+export interface DynamicModule extends ModuleMetadata {
+  // ... existing code ...
+} 

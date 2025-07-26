@@ -8,8 +8,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('/login')
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+  ) {
+    const user = await this.authService.login(loginDto);
+    const payload = { email: user.email, sub: user.id };
+    const accessToken = await this.authService.signJwt(payload);
+    return { accessToken };
   }
 
   @UseGuards(JwtAuthGuard)

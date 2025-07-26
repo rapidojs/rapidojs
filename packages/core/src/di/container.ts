@@ -45,6 +45,24 @@ export class DIContainer {
   }
 
   public registerProvider(provider: Provider): void {
+    const providerToken = typeof provider === 'function' ? provider : provider.provide;
+    const providerName =
+      typeof provider === 'function'
+        ? provider.name
+        : typeof provider === 'object'
+        ? (provider.provide as any)?.name || (typeof provider.provide === 'string' ? provider.provide : 'Unknown')
+        : 'Unknown';
+
+    const isUseValue = typeof provider === 'object' && provider.useValue !== undefined;
+
+    // 检查是否已经有 useValue provider 存在
+    if (this.providers.has(providerToken)) {
+      const existingProvider = this.providers.get(providerToken);
+      if (existingProvider.useValue !== undefined && !isUseValue) {
+        return; // 不覆盖 useValue provider
+      }
+    }
+    
     if (typeof provider === 'function') {
       this.providers.set(provider, { useClass: provider });
     } else {
@@ -60,64 +78,70 @@ export class DIContainer {
     return isForwardReference(typeOrRef) ? this.resolveForwardRef(typeOrRef) : typeOrRef;
   }
 
-  public async resolve<T>(target: Type<T> | ForwardReference<T>): Promise<T> {
+  public async resolve<T>(target: Type<T> | ForwardReference<T> | string): Promise<T> {
     // 处理 undefined 或 null 的情况
     if (!target) {
       throw new Error('无法解析空的依赖目标');
     }
 
-    const actualTarget = this.getInjectionToken(target);
-
-    // 如果是字符串令牌，检查是否已注册为值提供者
-    if (typeof actualTarget === 'string') {
-      if (!this.providers.has(actualTarget)) {
-        throw new Error(`未找到令牌 '${actualTarget}' 的提供者`);
-      }
-      const provider = this.providers.get(actualTarget);
-      if (provider.useValue !== undefined) {
-        return provider.useValue;
-      }
-      throw new Error(`令牌 '${actualTarget}' 不是值提供者`);
-    }
-
-    // 检查是否是一个有效的类/构造函数
-    if (!actualTarget || typeof actualTarget !== 'function') {
-      throw new Error(`无法解析非构造函数类型: ${actualTarget}`);
-    }
+    const actualTarget = typeof target === 'string' ? target : this.getInjectionToken(target);
 
     if (this.instances.has(actualTarget)) {
       return this.instances.get(actualTarget) as T;
     }
 
-    // 检测循环依赖，但对于已经创建临时实例的情况允许继续
     if (this.isResolving.has(actualTarget)) {
-      // 如果已经有临时实例，返回它
       if (this.instances.has(actualTarget)) {
         return this.instances.get(actualTarget) as T;
       }
-      // 否则抛出循环依赖错误
-      throw new Error(`检测到循环依赖: ${actualTarget.name} 正在被解析中`);
+      throw new Error(`检测到循环依赖: ${(actualTarget as any).name || actualTarget}`);
     }
 
-    const isController = Reflect.getMetadata(CONTROLLER_METADATA, actualTarget) !== undefined;
+    const provider = this.providers.get(actualTarget);
 
-    if (!this.providers.has(actualTarget)) {
-      // If the token is not a registered provider, it might be a controller
-      // or a class that doesn't need to be explicitly registered. We can
-      // treat it as a transient provider.
+    if (provider) {
+      if (provider.useValue !== undefined) {
+        this.instances.set(actualTarget, provider.useValue);
+        return provider.useValue;
+      }
+
+      if (provider.useFactory) {
+        this.isResolving.add(actualTarget);
+        try {
+          const factoryDeps = await Promise.all((provider.inject || []).map((dep: any) => this.resolve(dep)));
+          const instance = await provider.useFactory(...factoryDeps);
+          this.instances.set(actualTarget, instance);
+          return instance;
+        } finally {
+          this.isResolving.delete(actualTarget);
+        }
+      }
+
+      const targetClass = provider.useClass || (typeof provider === 'function' ? provider : null);
+      if (targetClass) {
+        return this.createInstance(actualTarget, targetClass);
+      }
+
+      throw new Error(`为令牌 ${String(actualTarget)} 注册的提供者无效`);
+    }
+
+    if (typeof actualTarget === 'function') {
       this.providers.set(actualTarget, actualTarget);
+      return this.createInstance(actualTarget, actualTarget);
     }
 
-    // 标记正在解析
-    this.isResolving.add(actualTarget);
-    
-    // 创建临时实例来处理循环依赖
-    const tempInstance = Object.create(actualTarget.prototype);
-    this.instances.set(actualTarget, tempInstance);
+    throw new Error(`未找到令牌 '${String(actualTarget)}' 的提供者`);
+  }
+
+  private async createInstance<T>(token: any, targetClass: Type<T>): Promise<T> {
+    this.isResolving.add(token);
+
+    const tempInstance = Object.create(targetClass.prototype);
+    this.instances.set(token, tempInstance);
 
     try {
-      const paramTypes = Reflect.getMetadata('design:paramtypes', actualTarget) || [];
-      const injectMetadata = Reflect.getMetadata(INJECT_METADATA_KEY, actualTarget) || {};
+      const paramTypes = Reflect.getMetadata('design:paramtypes', targetClass) || [];
+      const injectMetadata = Reflect.getMetadata(INJECT_METADATA_KEY, targetClass) || {};
 
       const injections = await Promise.all(
         paramTypes.map(async (paramType: Type<any>, index: number) => {
@@ -133,20 +157,20 @@ export class DIContainer {
         }),
       );
 
-      const instance = new actualTarget(...injections);
+      const instance = new targetClass(...injections);
       
       // 复制临时实例的原型，然后用真实实例替换
-      Object.setPrototypeOf(tempInstance, actualTarget.prototype);
+      Object.setPrototypeOf(tempInstance, targetClass.prototype);
       Object.assign(tempInstance, instance);
       
       // 解析完成，移除标记
-      this.isResolving.delete(actualTarget);
+      this.isResolving.delete(token);
       
       return tempInstance as T;
     } catch (error) {
-      this.instances.delete(actualTarget);
+      this.instances.delete(token);
       // 解析失败时也要移除标记
-      this.isResolving.delete(actualTarget);
+      this.isResolving.delete(token);
       throw error;
     }
   }
@@ -185,6 +209,38 @@ export class DIContainer {
       }
     }
     return controllers;
+  }
+
+  public getAllBootstrapProviders(module: ModuleType, visited = new Set<ModuleType>()): any[] {
+    if (visited.has(module)) {
+      return [];
+    }
+    visited.add(module);
+
+    if (isDynamicModule(module)) {
+      let bootstrapProviders = (module as any).bootstrap || [];
+      if (module.imports) {
+        for (const imported of module.imports) {
+          bootstrapProviders = [...bootstrapProviders, ...this.getAllBootstrapProviders(imported, visited)];
+        }
+      }
+      return bootstrapProviders;
+    }
+
+    const resolvedModule = 'forwardRef' in module ? module() : module;
+    const metadata = Reflect.getMetadata(MODULE_METADATA_KEY, resolvedModule);
+
+    if (!metadata) {
+      return [];
+    }
+
+    let bootstrapProviders = metadata.bootstrap || [];
+    if (metadata.imports) {
+      for (const imported of metadata.imports) {
+        bootstrapProviders = [...bootstrapProviders, ...this.getAllBootstrapProviders(imported, visited)];
+      }
+    }
+    return bootstrapProviders;
   }
 
   public findFilter(exception: Error): Type<ExceptionFilter> | undefined {

@@ -34,7 +34,7 @@ export class ControllerRegistrar {
     if (!moduleMetadata?.prefix) {
       return; // Silently ignore classes without @Controller decorator
     }
-        const controllerInstance = await this.container.resolve(controller);
+    const controllerInstance = await this.container.resolve(controller);
 
     const prefix = moduleMetadata.prefix || '/';
     const routes: RouteDefinition[] = moduleMetadata.routes || [];
@@ -163,7 +163,13 @@ export class ControllerRegistrar {
     for (const param of params.sort((a, b) => a.index - b.index)) {
       if (!param.factory) continue; // Should not happen with the new decorator implementation
       
-      let result = await param.factory(param.data, context);
+      let result;
+      // Special handling for @Res() decorator to pass the raw reply object
+      if (param.type === 'response') {
+        result = reply;
+      } else {
+        result = await param.factory(param.data, context);
+      }
       
       const metatype = this.getParamType(controller.prototype, methodName, param.index);
       const effectivePipes = this.getEffectivePipes(metatype, classPipes, methodPipes, paramPipes[param.index] || []);
@@ -257,7 +263,6 @@ export class ControllerRegistrar {
     const matchesPattern = dtoPatterns.some(pattern => pattern.test(className));
     
     if (matchesPattern) {
-      console.log(`[DTO Check] ${className} matches DTO naming pattern`);
       return true;
     }
     
@@ -268,7 +273,6 @@ export class ControllerRegistrar {
     );
     
     if (hasValidatorMetadata) {
-      console.log(`[DTO Check] ${className} has validator metadata`);
       return true;
     }
     
@@ -281,7 +285,6 @@ export class ControllerRegistrar {
       );
       
       if (hasPrototypeValidatorMetadata) {
-        console.log(`[DTO Check] ${className} prototype has validator metadata`);
         return true;
       }
       
@@ -300,7 +303,6 @@ export class ControllerRegistrar {
         );
         
         if (hasPropertyValidatorMetadata) {
-          console.log(`[DTO Check] ${className}.${propName} has validator metadata`);
           return true;
         }
       }
@@ -310,7 +312,6 @@ export class ControllerRegistrar {
     // and has a reasonable name, consider it a potential DTO
     if (classKeys.length > 0 && className && className.length > 2 && 
         !className.startsWith('HTML') && !className.startsWith('Web')) {
-      console.log(`[DTO Check] ${className} has metadata and reasonable name, treating as DTO`);
       return true;
     }
     

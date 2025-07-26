@@ -26,6 +26,9 @@ export class RapidoFactory {
     const app = fastify(config?.fastifyOptions) as unknown as FastifyInstance;
     const container = new DIContainer();
 
+    // Register the app instance so it can be injected
+    container.registerProvider({ provide: 'APP_INSTANCE', useValue: app });
+
     // Set the global logger as soon as the app instance is created.
     // This ensures any LoggerService instantiated hereafter (manually or by DI)
     // gets the correct logger instance.
@@ -66,6 +69,12 @@ export class RapidoFactory {
     };
 
     await container.registerModule(rootModule);
+
+    // Bootstrap eager providers
+    const bootstrapProviders = container.getAllBootstrapProviders(rootModule);
+    for (const provider of bootstrapProviders) {
+      await container.resolve(provider);
+    }
 
     const controllers = container.getControllers(rootModule);
 

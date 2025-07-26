@@ -1,10 +1,8 @@
-import { DynamicModule, Module, Provider } from '@rapidojs/common';
+import { DynamicModule, Module, Provider, Type } from '@rapidojs/common';
 import { FastifyInstance } from 'fastify';
 import fastifyJwt, { FastifyJWTOptions } from '@fastify/jwt';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { AuthModuleAsyncOptions } from './interfaces/auth-module-options.interface.js';
-
-export const JWT_OPTIONS = Symbol('JWT_OPTIONS');
 
 @Module({
   providers: [JwtAuthGuard],
@@ -13,45 +11,49 @@ export const JWT_OPTIONS = Symbol('JWT_OPTIONS');
 export class AuthModule {
   public static forRoot(options: FastifyJWTOptions): DynamicModule {
     const optionsProvider: Provider = {
-      provide: JWT_OPTIONS,
+      provide: 'JWT_OPTIONS',
       useValue: options,
     };
 
     const jwtProvider: Provider = {
       provide: 'fastify-jwt-instance',
-      useFactory: (app: FastifyInstance, opts: FastifyJWTOptions) => {
-        app.register(fastifyJwt as any, opts);
+      useFactory: async (app: FastifyInstance, opts: FastifyJWTOptions) => {
+        await app.register(fastifyJwt as any, opts);
+        return app;
       },
-      inject: [Symbol.for('APP_INSTANCE'), JWT_OPTIONS],
+      inject: ['APP_INSTANCE', 'JWT_OPTIONS'],
     };
 
     return {
       module: AuthModule,
       providers: [optionsProvider, jwtProvider],
-      exports: [],
-    };
+      exports: [jwtProvider],
+      bootstrap: ['fastify-jwt-instance'],
+    } as any;
   }
 
   public static forRootAsync(options: AuthModuleAsyncOptions): DynamicModule {
     const optionsProvider: Provider = {
-      provide: JWT_OPTIONS,
+      provide: 'JWT_OPTIONS',
       useFactory: options.useFactory,
       inject: options.inject || [],
     };
 
     const jwtProvider: Provider = {
       provide: 'fastify-jwt-instance',
-      useFactory: (app: FastifyInstance, opts: FastifyJWTOptions) => {
-        app.register(fastifyJwt as any, opts);
+      useFactory: async (app: FastifyInstance, opts: FastifyJWTOptions) => {
+        await app.register(fastifyJwt as any, opts);
+        return app;
       },
-      inject: [Symbol.for('APP_INSTANCE'), JWT_OPTIONS],
+      inject: ['APP_INSTANCE', 'JWT_OPTIONS'],
     };
 
     return {
       module: AuthModule,
       imports: options.imports || [],
-      providers: [optionsProvider, jwtProvider, ...(options.providers || [])],
-      exports: [],
-    };
+      providers: [...(options.providers || []), optionsProvider, jwtProvider],
+      exports: [jwtProvider],
+      bootstrap: ['fastify-jwt-instance'],
+    } as any;
   }
 } 

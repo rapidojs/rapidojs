@@ -1,14 +1,14 @@
-import { Inject, Injectable } from '@rapidojs/common';
+import { Injectable, FastifyApp } from '@rapidojs/common';
 import { UnauthorizedException } from '@rapidojs/core';
+import type { FastifyInstance } from 'fastify';
 import { UserService } from '../user/user.service.js';
 import { LoginDto } from './dto/login.dto.js';
-import { FastifyInstance } from 'fastify';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
-    @Inject(Symbol.for('APP_INSTANCE')) private readonly app: FastifyInstance
+    @FastifyApp() private readonly app: FastifyInstance,
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
@@ -26,9 +26,13 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    const payload = { email: user.email, sub: user.id };
     return {
-      accessToken: await this.app.jwt.sign(payload),
+      email: user.email,
+      id: user.id,
     };
+  }
+
+  async signJwt(payload: Record<string, unknown>): Promise<string> {
+    return this.app.jwt.sign(payload);
   }
 }

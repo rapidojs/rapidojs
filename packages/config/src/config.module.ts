@@ -32,7 +32,11 @@ export class ConfigModule {
     })
     class DynamicConfigModule {}
 
-    return DynamicConfigModule;
+    return {
+      module: DynamicConfigModule,
+      providers: [configProvider],
+      exports: [ConfigService],
+    } as any;
   }
 
   /**
@@ -53,6 +57,10 @@ export class ConfigModule {
     })
     class FeatureConfigModule {}
 
-    return FeatureConfigModule;
+    return {
+      module: FeatureConfigModule,
+      providers: [configProvider],
+      exports: [ConfigService],
+    } as any;
   }
 } 

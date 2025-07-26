@@ -53,6 +53,14 @@ async function bootstrap() {
     const port = configService.get<number>('app.port');
     const host = configService.get<string>('app.host', '127.0.0.1');
 
+    console.log('ConfigService 实例信息:');
+    console.log('  端口号:', port);
+    console.log('  主机:', host);
+    console.log('  配置值:', {
+      'app.port': configService.get('app.port'),
+      'app.host': configService.get('app.host'),
+      'app.name': configService.get('app.name'),
+    });
 
     // 添加根路径重定向到测试页面
     app.get('/', async (request, reply) => {

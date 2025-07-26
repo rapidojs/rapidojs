@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext } from '@rapidojs/core';
+import { CanActivate, ExecutionContext } from '@rapidojs/common';
 
 /**
  * 全局认证守卫示例
@@ -6,10 +6,11 @@ import { CanActivate, ExecutionContext } from '@rapidojs/core';
  */
 export class GlobalAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.getRequest();
+    const request = context.switchToHttp().getRequest();
     
-    // 跳过健康检查端点
-    if (request.url === '/health' || request.url === '/') {
+    // 跳过不需要认证的端点
+    const publicEndpoints = ['/health', '/', '/auth/login'];
+    if (publicEndpoints.includes(request.url)) {
       return true;
     }
     
