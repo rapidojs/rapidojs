@@ -8,6 +8,14 @@ const { writeFile, ensureDir } = fs;
 import { FileUtils } from '../utils/file.utils.js';
 
 export class NewCommand {
+  /**
+   * 注册new命令
+   */
+  static register(program: Command): void {
+    const newCommand = new NewCommand();
+    program.addCommand(newCommand.create());
+  }
+
   create(): Command {
     const command = new Command('new');
 
@@ -379,4 +387,4 @@ export class CreateUserDto {
     console.log('\n然后访问 http://localhost:3000/health 查看你的 API!');
     console.log('\n' + chalk.yellow('开始构建你的高性能 API 吧! 🚀'));
   }
-} 
+}
