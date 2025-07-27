@@ -163,11 +163,11 @@ v1.1.0 版本已成功交付“武库”(The Arsenal)，为框架配备了一套
     * 辅助注入装饰器：`@InjectRepository(Entity)`。
     * 事务处理装饰器：`@Transactional()`，简化数据库事务操作。
 * **关键实现路径**:
-    * [ ] **实现 `TypeOrmModule`**: 实现 `forRoot` 和 `forFeature` 等静态方法，核心是动态创建和注册 `DataSource` 和 `Repository` 的 Provider。
-    * [ ] **实现 `@InjectRepository()`**: 创建参数装饰器，以生成特定的注入令牌。
-    * [ ] **实现事务装饰器**: 研究并实现基于 `AsyncLocalStorage` 或请求作用域 Provider 的 `@Transactional()` 装饰器，自动管理事务的开启、提交与回滚。
-    * [ ] **集成生命周期钩子**: 利用 `OnApplicationBootstrap` 和 `BeforeApplicationShutdown` 来管理数据库连接的生命周期。
-    * [ ] **编写测试**: 覆盖所有模块配置方式和注入能力。
+    * [x] **实现 `TypeOrmModule`**: 实现 `forRoot` 和 `forFeature` 等静态方法，核心是动态创建和注册 `DataSource` 和 `Repository` 的 Provider。
+    * [x] **实现 `@InjectRepository()`**: 创建参数装饰器，以生成特定的注入令牌。
+    * [x] **实现事务装饰器**: 研究并实现基于 `AsyncLocalStorage` 或请求作用域 Provider 的 `@Transactional()` 装饰器，自动管理事务的开启、提交与回滚。
+    * [x] **集成生命周期钩子**: 利用 `OnApplicationBootstrap` 和 `BeforeApplicationShutdown` 来管理数据库连接的生命周期。
+    * [x] **编写测试**: 覆盖所有模块配置方式和注入能力。
 
 ##### **2. `@rapidojs/redis` - Redis 集成模块**
 
