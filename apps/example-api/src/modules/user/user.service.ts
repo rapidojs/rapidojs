@@ -1,10 +1,12 @@
 import { Injectable } from '@rapidojs/core';
 import { GetUsersQueryDto } from './dto/get-users-query.dto.js';
+import { CreateUserDto } from './dto/create-user.dto.js';
 
 export interface User {
   id: number;
   name: string;
   email: string;
+  password?: string;
   createdAt: Date;
 }
 
@@ -15,12 +17,14 @@ export class UserService {
       id: 1,
       name: 'John Doe',
       email: 'john@example.com',
+      password: 'password123',
       createdAt: new Date('2024-01-01'),
     },
     {
       id: 2,
       name: 'Jane Smith',
       email: 'jane@example.com',
+      password: 'password456',
       createdAt: new Date('2024-01-02'),
     },
   ];
@@ -32,6 +36,8 @@ export class UserService {
       users.sort((a, b) => {
         const fieldA = a[query.sortBy as keyof User];
         const fieldB = b[query.sortBy as keyof User];
+
+        if (fieldA === undefined || fieldB === undefined) return 0;
 
         if (fieldA < fieldB) {
           return query.order === 'asc' ? -1 : 1;
@@ -52,14 +58,18 @@ export class UserService {
     return users;
   }
 
-  findById(id: number): User | undefined {
-    return this.users.find(user => user.id === id);
+  async findById(id: number) {
+    return this.users.find(u => u.id === id);
   }
 
-  create(userData: Omit<User, 'id' | 'createdAt'>): User {
+  async findByEmail(email: string) {
+    return this.users.find(u => u.email === email);
+  }
+
+  async create(createUserDto: CreateUserDto) {
     const newUser: User = {
       id: Math.max(...this.users.map(u => u.id), 0) + 1,
-      ...userData,
+      ...createUserDto,
       createdAt: new Date(),
     };
     this.users.push(newUser);

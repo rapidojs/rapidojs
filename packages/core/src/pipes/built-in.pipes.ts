@@ -1,4 +1,4 @@
-import { PipeTransform, ArgumentMetadata } from './pipe-transform.interface.js';
+import { PipeTransform, ArgumentMetadata } from '@rapidojs/common';
 
 /**
  * Built-in pipe that parses string values to integers

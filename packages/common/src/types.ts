@@ -28,6 +28,7 @@ export enum ParamType {
   HEADERS = 'headers',
   REQUEST = 'request',
   RESPONSE = 'response',
+  CUSTOM = 'custom',
 }
 
 /**
@@ -37,6 +38,8 @@ export interface ParamDefinition {
   index: number;
   type: ParamType;
   key?: string | undefined;
+  factory?: (data: unknown, context: any) => any;
+  data?: any;
 }
 
 /**
@@ -79,12 +82,14 @@ export interface ForwardReference<T = any> {
 /**
  * 模块可使用的类型，包括正常类型和延迟引用
  */
-export type ModuleType = Type<any> | ForwardReference<any>;
+export type ModuleType = Type<any> | DynamicModule | ForwardReference<any>;
 
 /**
  * 模块元数据接口，定义了模块的结构
  */
 export interface ModuleMetadata {
+  prefix?: string;
+  routes?: RouteDefinition[];
   /**
    * 要导入的模块
    * 支持普通类型和 forwardRef 延迟引用
@@ -112,10 +117,15 @@ export interface ModuleMetadata {
  */
 export type Provider = Type<any> | {
   provide: any;
-  useValue: any;
+  useValue?: any;
+  useClass?: Type<any>;
+  useFactory?: (...args: any[]) => any;
+  inject?: any[];
 };
 
 /**
- * Type representing a pipe constructor or instance
+ * 动态模块接口
  */
-export type PipeMetadata = PipeTransform | (new (...args: any[]) => PipeTransform); 
+export interface DynamicModule extends ModuleMetadata {
+  module: Type<any>;
+} 

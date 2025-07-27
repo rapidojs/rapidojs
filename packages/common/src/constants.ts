@@ -17,7 +17,8 @@ export const METADATA_KEY = {
   PARAMS: Symbol.for('rapido:params'),
   PIPES: Symbol.for('rapido:pipes'),
   PARAM_PIPES: Symbol.for('rapido:param_pipes'),
-  GUARDS: Symbol.for('rapido:guards')
+  GUARDS: Symbol.for('rapido:guards'),
+  INTERCEPTORS: Symbol.for('rapido:interceptors')
 };
 
 export const MODULE_METADATA = 'module:metadata';
@@ -38,7 +39,8 @@ export const EXCEPTION_FILTER_METADATA = 'exception-filter:metadata';
 export const GLOBAL_METADATA = {
   FILTERS: Symbol.for('rapido:global:filters'),
   PIPES: Symbol.for('rapido:global:pipes'),
-  GUARDS: Symbol.for('rapido:global:guards')
+  GUARDS: Symbol.for('rapido:global:guards'),
+  INTERCEPTORS: Symbol.for('rapido:global:interceptors')
 } as const;
 export const FORWARD_REF_METADATA = 'forward-ref:metadata';
 export const CIRCULAR_DEPENDENCY_HISTORY = 'circular-dependency:history';
@@ -61,4 +63,11 @@ export const INJECT_METADATA_KEY = 'rapido:inject';
 /**
  * 模块元数据键
  */
-export const MODULE_METADATA_KEY = 'rapido:module'; 
+export const MODULE_METADATA_KEY = 'rapido:module';
+
+export const ROUTE_ARGS_METADATA = 'route:args_metadata';
+
+export const GUARDS_METADATA = 'guards';
+export const PUBLIC_ROUTE_METADATA = 'public_route';
+export const INTERCEPTORS_METADATA = 'interceptors';
+export const NO_TRANSFORM_METADATA = 'no_transform';

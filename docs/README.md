@@ -13,11 +13,17 @@
 - [装饰器](./decorators.md) - 学习如何使用装饰器
 - [模块系统](./modules.md) - 构建模块化应用
 - [管道系统](./pipes.md) - 数据验证和转换
+- [认证](./auth.md) - 认证和授权机制
 - [NestJS 风格管道](./nestjs-style-pipes.md) - 类似 NestJS 的管道使用
 
 ### 🔧 高级功能
 - [配置管理](./configuration.md) - 应用配置和环境变量
 - [异常处理](./exception-filters.md) - 错误处理和异常过滤器
+- [任务调度](./schedule.md) - 定时任务和后台任务
+- [拦截器](./interceptors.md) - AOP 和请求响应拦截
+- [生命周期钩子](./lifecycle-hooks.md) - 应用生命周期管理
+- [健康检查](./health-check.md) - 应用健康监控
+- [全局功能](./global-features.md) - 全局配置和功能
 - [测试](./testing.md) - 单元测试和集成测试
 
 ### 🚀 生产就绪
@@ -40,7 +46,9 @@
 1. 深入了解 [模块系统](./modules.md) 
 2. 掌握 [管道系统](./pipes.md) 进行数据验证
 3. 学习 [配置管理](./configuration.md) 和 [异常处理](./exception-filters.md)
-4. 编写 [测试](./testing.md) 确保代码质量
+4. 使用 [任务调度](./schedule.md) 添加定时任务
+5. 掌握 [拦截器](./interceptors.md) 和 [生命周期钩子](./lifecycle-hooks.md)
+6. 编写 [测试](./testing.md) 确保代码质量
 
 ### 生产部署
 1. 学习 [性能优化](./performance.md) 技巧
@@ -67,4 +75,4 @@
 
 ---
 
-**开始构建高性能 API 应用吧！** 🚀 
+**开始构建高性能 API 应用吧！** 🚀

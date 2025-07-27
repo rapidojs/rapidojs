@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { HttpArgumentsHostImpl } from '../helpers/http-arguments-host.js';
-import { ArgumentsHost, HttpArgumentsHost } from '../interfaces/arguments-host.interface.js';
+import { HttpExecutionContextImpl } from '../helpers/execution-context-impl.js';
+import { ArgumentsHost, HttpArgumentsHost } from '@rapidojs/common';
 import { FastifyRequest, FastifyReply } from 'fastify';
 
 // 创建模拟的 Fastify 请求和响应对象
@@ -46,19 +46,19 @@ const createMockReply = (overrides = {}): FastifyReply => {
 describe('ArgumentsHost', () => {
   let mockRequest: FastifyRequest;
   let mockReply: FastifyReply;
-  let argumentsHost: HttpArgumentsHostImpl;
+  let argumentsHost: HttpExecutionContextImpl;
 
   beforeEach(() => {
     mockRequest = createMockRequest();
     mockReply = createMockReply();
-    argumentsHost = new HttpArgumentsHostImpl(mockRequest, mockReply);
+    argumentsHost = new HttpExecutionContextImpl(mockRequest, mockReply, null, null);
   });
 
-  describe('HttpArgumentsHostImpl 构造函数', () => {
+  describe('HttpExecutionContextImpl 构造函数', () => {
     it('应该正确接受 request 和 reply 参数', () => {
-      const host = new HttpArgumentsHostImpl(mockRequest, mockReply);
+      const host = new HttpExecutionContextImpl(mockRequest, mockReply, null, null);
       
-      expect(host).toBeInstanceOf(HttpArgumentsHostImpl);
+      expect(host).toBeInstanceOf(HttpExecutionContextImpl);
       expect(host.getRequest()).toBe(mockRequest);
       expect(host.getResponse()).toBe(mockReply);
     });
@@ -78,7 +78,7 @@ describe('ArgumentsHost', () => {
 
   describe('getRequest 方法', () => {
     it('应该返回原始 Fastify 请求对象', () => {
-      const request = argumentsHost.getRequest();
+      const request = argumentsHost.getRequest<FastifyRequest>();
       
       expect(request).toBe(mockRequest);
       expect(request.method).toBe('GET');
@@ -96,7 +96,7 @@ describe('ArgumentsHost', () => {
         customProperty: 'custom-value'
       } as CustomRequest;
 
-      const customHost = new HttpArgumentsHostImpl(customRequest, mockReply);
+      const customHost = new HttpExecutionContextImpl(customRequest, mockReply, null, null);
       const typedRequest = customHost.getRequest<CustomRequest>();
       
       expect(typedRequest.customProperty).toBe('custom-value');
@@ -121,8 +121,8 @@ describe('ArgumentsHost', () => {
         body: undefined
       });
 
-      const emptyHost = new HttpArgumentsHostImpl(emptyRequest, mockReply);
-      const request = emptyHost.getRequest();
+      const emptyHost = new HttpExecutionContextImpl(emptyRequest, mockReply, null, null);
+      const request = emptyHost.getRequest<FastifyRequest>();
       
       expect(request.query).toEqual({});
       expect(request.params).toEqual({});
@@ -133,7 +133,7 @@ describe('ArgumentsHost', () => {
 
   describe('getResponse 方法', () => {
     it('应该返回原始 Fastify 响应对象', () => {
-      const response = argumentsHost.getResponse();
+      const response = argumentsHost.getResponse<FastifyReply>();
       
       expect(response).toBe(mockReply);
       expect(response.statusCode).toBe(200);
@@ -150,7 +150,7 @@ describe('ArgumentsHost', () => {
         customMethod: () => {}
       } as CustomResponse;
 
-      const customHost = new HttpArgumentsHostImpl(mockRequest, customReply);
+      const customHost = new HttpExecutionContextImpl(mockRequest, customReply, null, null);
       const typedResponse = customHost.getResponse<CustomResponse>();
       
       expect(typeof typedResponse.customMethod).toBe('function');
@@ -204,8 +204,8 @@ describe('ArgumentsHost', () => {
       expect(typeof httpHost.getResponse).toBe('function');
       
       // 验证方法能够正常工作
-      expect(httpHost.getRequest()).toBe(mockRequest);
-      expect(httpHost.getResponse()).toBe(mockReply);
+      expect(httpHost.getRequest<FastifyRequest>()).toBe(mockRequest);
+      expect(httpHost.getResponse<FastifyReply>()).toBe(mockReply);
     });
   });
 
@@ -224,8 +224,8 @@ describe('ArgumentsHost', () => {
       expect(typeof httpHost.getRequest).toBe('function');
       expect(typeof httpHost.getResponse).toBe('function');
       
-      const request = httpHost.getRequest();
-      const response = httpHost.getResponse();
+      const request = httpHost.getRequest<FastifyRequest>();
+      const response = httpHost.getResponse<FastifyReply>();
       
       expect(request).toBeDefined();
       expect(response).toBeDefined();
@@ -306,9 +306,9 @@ describe('ArgumentsHost', () => {
       
       methods.forEach(method => {
         const request = createMockRequest({ method });
-        const host = new HttpArgumentsHostImpl(request, mockReply);
+        const host = new HttpExecutionContextImpl(request, mockReply, null, null);
         
-        expect(host.getRequest().method).toBe(method);
+        expect(host.getRequest<FastifyRequest>().method).toBe(method);
       });
     });
 
@@ -329,9 +329,9 @@ describe('ArgumentsHost', () => {
       };
 
       const request = createMockRequest({ body: complexBody });
-      const host = new HttpArgumentsHostImpl(request, mockReply);
+      const host = new HttpExecutionContextImpl(request, mockReply, null, null);
       
-      expect(host.getRequest().body).toEqual(complexBody);
+      expect(host.getRequest<FastifyRequest>().body).toEqual(complexBody);
     });
 
          it('应该处理大量查询参数', () => {
@@ -341,10 +341,10 @@ describe('ArgumentsHost', () => {
        }
 
        const request = createMockRequest({ query: largeQuery });
-       const host = new HttpArgumentsHostImpl(request, mockReply);
+       const host = new HttpExecutionContextImpl(request, mockReply, null, null);
        
-       expect(Object.keys(host.getRequest().query as Record<string, string>)).toHaveLength(100);
-       expect((host.getRequest().query as Record<string, string>)['param50']).toBe('value50');
+       expect(Object.keys(host.getRequest<FastifyRequest>().query as Record<string, string>)).toHaveLength(100);
+       expect((host.getRequest<FastifyRequest>().query as Record<string, string>)['param50']).toBe('value50');
      });
 
     it('应该处理特殊字符的请求头', () => {
@@ -356,9 +356,9 @@ describe('ArgumentsHost', () => {
       };
 
       const request = createMockRequest({ headers: specialHeaders });
-      const host = new HttpArgumentsHostImpl(request, mockReply);
+      const host = new HttpExecutionContextImpl(request, mockReply, null, null);
       
-      expect(host.getRequest().headers).toEqual(specialHeaders);
+      expect(host.getRequest<FastifyRequest>().headers).toEqual(specialHeaders);
     });
   });
 
@@ -377,8 +377,8 @@ describe('ArgumentsHost', () => {
       const iterations = 1000;
       
       for (let i = 0; i < iterations; i++) {
-        const request = argumentsHost.getRequest();
-        const response = argumentsHost.getResponse();
+        const request = argumentsHost.getRequest<FastifyRequest>();
+        const response = argumentsHost.getResponse<FastifyReply>();
         const httpHost = argumentsHost.switchToHttp();
         
         expect(request).toBeDefined();

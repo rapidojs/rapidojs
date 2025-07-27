@@ -43,7 +43,7 @@ class TestController {
   }
 
   @Get('/request-info')
-  getRequestInfo(@Req request: any): object {
+  getRequestInfo(@Req() request: any): object {
     return { 
       method: request.method,
       url: request.url,

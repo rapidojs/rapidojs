@@ -1,3 +1,5 @@
+import { Type, ForwardReference, Provider } from './types.js';
+
 /**
  * Interface that must be implemented by all pipes.
  * Pipes are used to transform and validate data before it reaches the route handler.
@@ -34,6 +36,30 @@ export interface ArgumentMetadata {
 }
 
 /**
+ * Provides access to the arguments of a request, specialized for different contexts.
+ */
+export interface ArgumentsHost {
+  /**
+   * Switches the context to an HTTP-specific context.
+   */
+  switchToHttp(): HttpArgumentsHost;
+}
+
+/**
+ * Provides access to the HTTP-specific request and response objects.
+ */
+export interface HttpArgumentsHost {
+  /**
+   * Returns the underlying HTTP request object.
+   */
+  getRequest<T = any>(): T;
+  /**
+   * Returns the underlying HTTP response object.
+   */
+  getResponse<T = any>(): T;
+}
+
+/**
  * Guard interface for route protection
  */
 export interface CanActivate {
@@ -46,24 +72,19 @@ export interface CanActivate {
 }
 
 /**
- * Execution context interface providing access to request/response
- * Uses generic types to avoid specific HTTP framework dependencies
+ * An execution context provides details about the current request,
+ * and extends ArgumentsHost to allow switching to specific contexts like HTTP.
  */
-export interface ExecutionContext<TRequest = any, TResponse = any> {
+export interface ExecutionContext extends ArgumentsHost {
   /**
-   * Get the underlying HTTP request object
+   * Returns the type of the controller class which the current handler belongs to.
    */
-  getRequest<T = TRequest>(): T;
-  
+  getClass<T = any>(): T | null;
+
   /**
-   * Get the underlying HTTP response object
+   * Returns a reference to the handler (method) that will be executed.
    */
-  getResponse<T = TResponse>(): T;
-  
-  /**
-   * Get additional context data
-   */
-  getContext(): any;
+  getHandler(): Function | null;
 }
 
 /**
@@ -135,3 +156,84 @@ export interface ValidationPipeOptions {
  * Type representing a pipe constructor or instance
  */
 export type PipeMetadata = PipeTransform | (new (...args: any[]) => PipeTransform); 
+
+/**
+ * Interface for interceptors that can intercept and modify the execution flow
+ */
+export interface Interceptor<T = any, R = any> {
+  /**
+   * Intercepts the execution of a route handler
+   * @param context - The execution context
+   * @param next - The call handler to continue execution
+   * @returns The result or a modified result
+   */
+  intercept(context: ExecutionContext, next: CallHandler<T>): R | Promise<R>;
+}
+
+/**
+ * Interface for the call handler used in interceptors
+ */
+export interface CallHandler<T = any> {
+  /**
+   * Continues the execution and returns an observable-like object
+   * @returns The result of the handler execution
+   */
+  handle(): Promise<T>;
+}
+
+/**
+ * Type representing an interceptor constructor or instance
+ */
+export type InterceptorMetadata = Interceptor | (new (...args: any[]) => Interceptor);
+
+/**
+ * Lifecycle hook interface for application bootstrap
+ */
+export interface OnApplicationBootstrap {
+  /**
+   * Called after the application has been initialized
+   */
+  onApplicationBootstrap(): void | Promise<void>;
+}
+
+/**
+ * Lifecycle hook interface for application shutdown
+ */
+export interface BeforeApplicationShutdown {
+  /**
+   * Called before the application shuts down
+   */
+  beforeApplicationShutdown(): void | Promise<void>;
+}
+
+/**
+ * Lifecycle hook interface for module initialization
+ */
+export interface OnModuleInit {
+  /**
+   * Called after the module has been initialized
+   */
+  onModuleInit(): void | Promise<void>;
+}
+
+/**
+ * Lifecycle hook interface for module destruction
+ */
+export interface OnModuleDestroy {
+  /**
+   * Called before the module is destroyed
+   */
+  onModuleDestroy(): void | Promise<void>;
+}
+
+export interface ModuleMetadata {
+  imports?: Array<Type<any> | DynamicModule | ForwardReference>;
+  controllers?: Type<any>[];
+  providers?: Provider[];
+  exports?: Array<Type<any> | DynamicModule | Provider>;
+  bootstrap?: Array<Type<any> | string>;
+}
+
+export interface DynamicModule extends ModuleMetadata {
+  // ... existing code ...
+}

@@ -18,6 +18,7 @@
     "@rapidojs/common": "workspace:*",
     "@rapidojs/config": "workspace:*",
     "@rapidojs/core": "workspace:*",
+    "@rapidojs/auth": "workspace:*",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "minimist": "^1.2.8",

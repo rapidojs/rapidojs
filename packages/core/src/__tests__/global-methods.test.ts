@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { RapidoFactory } from '../factory/rapido.factory.js';
 import { Controller, Get, Post, Body, Injectable, Module, Catch } from '@rapidojs/common';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
-import { PipeTransform, ArgumentMetadata, CanActivate, ExecutionContext } from '@rapidojs/common';
-import { ArgumentsHost } from '../interfaces/arguments-host.interface.js';
+import { PipeTransform, ArgumentMetadata, CanActivate, ExecutionContext, ArgumentsHost } from '@rapidojs/common';
 
 // 测试用的全局过滤器
 @Catch(Error)
@@ -29,7 +28,7 @@ class GlobalTransformPipe implements PipeTransform {
 // 测试用的全局守卫
 class GlobalAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.getRequest();
+    const request = context.switchToHttp().getRequest();
     return request.headers.authorization === 'Bearer valid-token';
   }
 }
