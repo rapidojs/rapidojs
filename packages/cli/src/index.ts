@@ -5,6 +5,8 @@ import chalk from 'chalk';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { NewCommand } from './commands/new.command.js';
+import { GenerateCommand } from './commands/generate.command.js';
+import { AddCommand } from './commands/add.command.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,18 +31,10 @@ async function main() {
     .description(chalk.blue('⚡ RapidoJS CLI - 快速构建高性能 API 应用'))
     .version(version, '-v, --version', '显示版本号');
 
-  // 添加 new 命令
-  const newCommand = new NewCommand();
-  program.addCommand(newCommand.create());
-
-  program
-    .command('generate <type> <name>')
-    .alias('g')
-    .description('生成代码模板')
-    .action((type: string, name: string) => {
-      console.log(chalk.green(`生成 ${type}: ${name}`));
-      console.log(chalk.yellow('此功能正在开发中...'));
-    });
+  // 注册命令
+  NewCommand.register(program);
+  GenerateCommand.register(program);
+  AddCommand.register(program);
 
   // 显示帮助信息
   program.on('--help', () => {

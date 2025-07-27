@@ -437,16 +437,43 @@ pnpm add -g @rapidojs/cli
 # Create new project
 rapido new my-api
 
+# Add modules to existing project
+rapido add auth          # Add authentication module
+rapido add config        # Add configuration module
+rapido add schedule      # Add task scheduling module
+rapido add testing       # Add testing module
+
+# Generate code files
+rapido g controller user # Generate user controller
+rapido g service user    # Generate user service
+rapido g guard auth      # Generate auth guard
+rapido g interceptor log # Generate logging interceptor
+
 # Show help
 rapido --help
 ```
 
-Generated project includes:
+### CLI Features
+
+**Project Generation:**
 - ✅ Complete TypeScript configuration
 - ✅ SWC fast compiler configuration
 - ✅ Example user module
 - ✅ Validation pipe integration
 - ✅ Development scripts and build configuration
+
+**Module Management:**
+- ✅ Automatic package installation
+- ✅ Configuration file generation
+- ✅ Example code templates
+- ✅ Module integration guidance
+
+**Code Generation:**
+- ✅ Controllers with CRUD operations
+- ✅ Services with business logic templates
+- ✅ Guards for authentication/authorization
+- ✅ Interceptors for cross-cutting concerns
+- ✅ Automatic test file generation
 
 ## 📦 Project Structure
 
@@ -481,12 +508,12 @@ rapidojs/
 - [x] **Interceptors System** - `@UseInterceptors`, method/class/global interceptors
 - [x] **Lifecycle Hooks** - `OnModuleInit`, `OnApplicationBootstrap`, etc.
 - [x] **Health Check Module** - Built-in health monitoring endpoints
+- [x] **Task Scheduling** - `@rapidojs/schedule` package with declarative task scheduling
 - [x] **Test Coverage** - Comprehensive test suite with 477 passing tests
 
 ### 🔄 In Progress (v1.1.0 "武库")
 
-- [ ] Task scheduling with `@rapidojs/schedule`
-- [ ] Enhanced CLI features (`add`, `g <schematic>`)
+- [x] Enhanced CLI features (`add`, `g <schematic>`)
 - [ ] Complete documentation site
 
 ### 🎯 Future Plans (v1.2.0 "数据引擎")

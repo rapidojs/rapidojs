@@ -439,6 +439,202 @@ const ApiController = () => applyDecorators(
 );
 ```
 
+## 任务调度 (@rapidojs/schedule)
+
+### 装饰器
+
+#### @Cron(cronExpression: string, options?: CronOptions)
+
+定义基于 Cron 表达式的定时任务。
+
+```typescript
+@Injectable()
+export class TasksService {
+  @Cron('0 0 * * *') // 每天午夜执行
+  handleCron() {
+    console.log('Daily task executed');
+  }
+
+  @Cron('*/5 * * * *', { name: 'my-task' })
+  handleNamedCron() {
+    console.log('Every 5 minutes');
+  }
+}
+```
+
+#### @Interval(milliseconds: number, options?: IntervalOptions)
+
+定义基于时间间隔的重复任务。
+
+```typescript
+@Injectable()
+export class TasksService {
+  @Interval(10000) // 每10秒执行一次
+  handleInterval() {
+    console.log('Interval task executed');
+  }
+
+  @Interval(5000, { name: 'data-sync' })
+  handleNamedInterval() {
+    console.log('Data sync task');
+  }
+}
+```
+
+#### @Timeout(milliseconds: number, options?: TimeoutOptions)
+
+定义延时执行的一次性任务。
+
+```typescript
+@Injectable()
+export class TasksService {
+  @Timeout(5000) // 5秒后执行一次
+  handleTimeout() {
+    console.log('Timeout task executed');
+  }
+
+  @Timeout(3000, { name: 'startup-task' })
+  handleNamedTimeout() {
+    console.log('Startup task completed');
+  }
+}
+```
+
+### 服务
+
+#### SchedulerService
+
+任务调度服务，用于动态管理任务。
+
+```typescript
+@Injectable()
+export class TasksService {
+  constructor(private schedulerService: SchedulerService) {}
+
+  // 添加 Cron 任务
+  addCronJob() {
+    const job = this.schedulerService.addCronJob('my-cron', '0 0 * * *', () => {
+      console.log('Dynamic cron job');
+    });
+  }
+
+  // 添加间隔任务
+  addIntervalJob() {
+    const job = this.schedulerService.addInterval('my-interval', 5000, () => {
+      console.log('Dynamic interval job');
+    });
+  }
+
+  // 添加超时任务
+  addTimeoutJob() {
+    const job = this.schedulerService.addTimeout('my-timeout', 3000, () => {
+      console.log('Dynamic timeout job');
+    });
+  }
+
+  // 删除任务
+  deleteJob() {
+    this.schedulerService.deleteCronJob('my-cron');
+    this.schedulerService.deleteInterval('my-interval');
+    this.schedulerService.deleteTimeout('my-timeout');
+  }
+
+  // 获取所有任务
+  getAllJobs() {
+    const cronJobs = this.schedulerService.getCronJobs();
+    const intervals = this.schedulerService.getIntervals();
+    const timeouts = this.schedulerService.getTimeouts();
+  }
+}
+```
+
+### 模块
+
+#### ScheduleModule
+
+任务调度模块。
+
+```typescript
+// 基本用法
+@Module({
+  imports: [ScheduleModule.forRoot()],
+})
+export class AppModule {}
+
+// 带配置
+@Module({
+  imports: [
+    ScheduleModule.forRoot({
+      timezone: 'Asia/Shanghai',
+      maxConcurrentJobs: 10,
+    }),
+  ],
+})
+export class AppModule {}
+
+// 异步配置
+@Module({
+  imports: [
+    ScheduleModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        timezone: configService.get('TIMEZONE'),
+        maxConcurrentJobs: configService.get('MAX_JOBS'),
+      }),
+      inject: [ConfigService],
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### 接口和类型
+
+#### CronOptions
+
+Cron 任务选项。
+
+```typescript
+interface CronOptions {
+  name?: string;
+  timezone?: string;
+  disabled?: boolean;
+}
+```
+
+#### IntervalOptions
+
+间隔任务选项。
+
+```typescript
+interface IntervalOptions {
+  name?: string;
+  disabled?: boolean;
+}
+```
+
+#### TimeoutOptions
+
+超时任务选项。
+
+```typescript
+interface TimeoutOptions {
+  name?: string;
+  disabled?: boolean;
+}
+```
+
+#### ScheduleModuleOptions
+
+调度模块配置选项。
+
+```typescript
+interface ScheduleModuleOptions {
+  timezone?: string;
+  maxConcurrentJobs?: number;
+  errorHandler?: (error: Error, jobName?: string) => void;
+}
+```
+
 ## 生命周期钩子
 
 ### OnModuleInit

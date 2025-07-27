@@ -1,0 +1,69 @@
+{
+  "name": "@rapidojs/schedule",
+  "version": "1.0.5",
+  "description": "RapidoJS 任务调度模块 - 提供声明式的定时任务和后台任务能力",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:swc && pnpm run build:types",
+    "build:swc": "swc src -d dist --strip-leading-paths --source-maps --copy-files",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist",
+    "clean": "rm -rf dist",
+    "test": "vitest --run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage"
+  },
+  "dependencies": {
+    "@rapidojs/common": "workspace:*",
+    "@rapidojs/core": "workspace:*",
+    "node-cron": "^3.0.3",
+    "reflect-metadata": "^0.2.2",
+    "tsyringe": "^4.8.0",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@swc/cli": "^0.4.1-nightly.20240914",
+    "@swc/core": "^1.7.26",
+    "@types/node": "^20.0.0",
+    "@types/node-cron": "^3.0.11",
+    "typescript": "^5.6.3",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@rapidojs/core": "^1.0.0",
+    "reflect-metadata": "^0.2.0"
+  },
+  "keywords": [
+    "rapidojs",
+    "schedule",
+    "cron",
+    "task",
+    "timer",
+    "interval",
+    "timeout",
+    "fastify",
+    "typescript"
+  ],
+  "author": "RapidoJS Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rapidojs/rapidojs.git",
+    "directory": "packages/schedule"
+  },
+  "bugs": {
+    "url": "https://github.com/rapidojs/rapidojs/issues"
+  },
+  "homepage": "https://rapidojs.dev"
+}

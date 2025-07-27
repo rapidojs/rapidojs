@@ -430,23 +430,50 @@ export class AppModule {}
 
 ## 🛠️ CLI 工具
 
-``bash
+```bash
 # 全局安装 CLI
 pnpm add -g @rapidojs/cli
 
 # 创建新项目
 rapido new my-api
 
+# 向现有项目添加模块
+rapido add auth          # 添加认证模块
+rapido add config        # 添加配置模块
+rapido add schedule      # 添加任务调度模块
+rapido add testing       # 添加测试模块
+
+# 生成代码文件
+rapido g controller user # 生成用户控制器
+rapido g service user    # 生成用户服务
+rapido g guard auth      # 生成认证守卫
+rapido g interceptor log # 生成日志拦截器
+
 # 查看帮助
 rapido --help
 ```
 
-生成的项目包含：
+### CLI 功能特性
+
+**项目生成：**
 - ✅ 完整的 TypeScript 配置
 - ✅ SWC 快速编译器配置
 - ✅ 示例用户模块
 - ✅ 验证管道集成
 - ✅ 开发脚本和构建配置
+
+**模块管理：**
+- ✅ 自动包安装
+- ✅ 配置文件生成
+- ✅ 示例代码模板
+- ✅ 模块集成指导
+
+**代码生成：**
+- ✅ 带 CRUD 操作的控制器
+- ✅ 带业务逻辑模板的服务
+- ✅ 用于认证/授权的守卫
+- ✅ 用于横切关注点的拦截器
+- ✅ 自动测试文件生成
 
 ## 📦 项目结构
 
@@ -482,12 +509,12 @@ rapidojs/
 - [x] **拦截器系统** - `@UseInterceptors`，方法/类/全局拦截器
 - [x] **生命周期钩子** - `OnModuleInit`, `OnApplicationBootstrap` 等
 - [x] **健康检查模块** - 内置健康监控端点
+- [x] **任务调度** - `@rapidojs/schedule` 包，支持声明式任务调度
 - [x] **测试覆盖** - 全面的测试套件，477 个测试通过
 
 ### 🔄 开发中 (v1.1.0 "武库")
 
-- [ ] 任务调度 `@rapidojs/schedule`
-- [ ] CLI 功能增强 (`add`, `g <schematic>`)
+- [x] CLI 功能增强 (`add`, `g <schematic>`)
 - [ ] 完整文档站点
 
 ### 🎯 未来计划 (v1.2.0 "数据引擎")
