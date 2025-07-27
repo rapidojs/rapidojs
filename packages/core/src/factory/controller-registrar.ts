@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { METADATA_KEY } from '../constants.js';
 import { RouteDefinition, Type } from '../types.js';
 import { ParamDefinition, ParamType, CanActivate, PipeMetadata, PUBLIC_ROUTE_METADATA, GUARDS_METADATA, MODULE_METADATA_KEY, ROUTE_ARGS_METADATA, ModuleMetadata, INTERCEPTORS_METADATA, Interceptor, CallHandler, InterceptorMetadata } from '@rapidojs/common';
-import { DIContainer } from '../di/container.js';
+import { IContainer } from '../di/container.interface.js';
 import { PipeTransform, ArgumentMetadata } from '../pipes/pipe-transform.interface.js';
 import { ValidationPipe } from '../pipes/validation.pipe.js';
 import { RapidoApp } from '../interfaces/rapido-app.interface.js';
@@ -15,8 +15,16 @@ import { HttpExecutionContextImpl } from '../helpers/execution-context-impl.js';
 export class ControllerRegistrar {
     constructor(
     private readonly fastify: FastifyInstance | RapidoApp,
-    private readonly container: DIContainer,
+    private readonly container: IContainer,
   ) {}
+
+  /**
+   * 统一处理容器解析，确保返回 Promise
+   */
+  private async resolveFromContainer<T>(target: any): Promise<T> {
+    const result = this.container.resolve<T>(target);
+    return result instanceof Promise ? result : Promise.resolve(result);
+  }
 
   /**
    * Registers a list of controllers with the Fastify instance.
@@ -34,7 +42,7 @@ export class ControllerRegistrar {
     if (!moduleMetadata?.prefix) {
       return; // Silently ignore classes without @Controller decorator
     }
-    const controllerInstance = await this.container.resolve(controller);
+    const controllerInstance = await this.resolveFromContainer(controller);
 
     const prefix = moduleMetadata.prefix || '/';
     const routes: RouteDefinition[] = moduleMetadata.routes || [];
@@ -120,7 +128,7 @@ export class ControllerRegistrar {
       const context = new HttpExecutionContextImpl(request, reply, controller, (controller.prototype as any)[methodName]);
 
       for (const guard of guards) {
-        const guardInstance = (await this.container.resolve(guard)) as CanActivate;
+        const guardInstance = (await this.resolveFromContainer(guard)) as CanActivate;
         const canActivateResult = await guardInstance.canActivate(context);
 
         if (!canActivateResult) {
@@ -186,7 +194,7 @@ export class ControllerRegistrar {
   private async createInterceptorInstance(interceptor: InterceptorMetadata): Promise<Interceptor> {
     if (typeof interceptor === 'function') {
       // Interceptor constructor - resolve through DI container
-      return await this.container.resolve(interceptor) as Interceptor;
+      return await this.resolveFromContainer(interceptor) as Interceptor;
     } else {
       // Interceptor instance
       return interceptor;

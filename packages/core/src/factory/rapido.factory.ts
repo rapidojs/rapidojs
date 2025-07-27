@@ -1,6 +1,6 @@
 import fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ControllerRegistrar } from './controller-registrar.js';
-import { DIContainer } from '../di/container.js';
+import { EnhancedDIContainer } from '../di/enhanced-container.js';
 import { Type } from '../types.js';
 import { AppConfig, StaticFileConfig } from '../interfaces/app-config.interface.js';
 import { MODULE_METADATA, EXCEPTION_FILTER_METADATA } from '../constants.js';
@@ -24,7 +24,7 @@ export class RapidoFactory {
    */
     public static async create(rootModule: Type<any>, config?: AppConfig): Promise<RapidoApp> {
     const app = fastify(config?.fastifyOptions) as unknown as FastifyInstance;
-    const container = new DIContainer();
+    const container = new EnhancedDIContainer();
 
     // Register the app instance so it can be injected
     container.registerProvider({ provide: 'APP_INSTANCE', useValue: app });

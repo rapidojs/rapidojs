@@ -17,6 +17,7 @@ import {
   TransformInterceptor
 } from '@rapidojs/common';
 import { FastifyInstance } from 'fastify';
+import { RapidoApp } from '../interfaces/rapido-app.interface.js';
 
 // 测试用的自定义拦截器
 @Injectable()
@@ -103,7 +104,7 @@ class TestController {
 class TestModule {}
 
 describe('拦截器系统测试', () => {
-  let app: FastifyInstance;
+  let app: RapidoApp;
 
   describe('方法级拦截器', () => {
     beforeEach(async () => {
