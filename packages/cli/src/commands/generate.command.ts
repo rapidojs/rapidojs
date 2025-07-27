@@ -503,7 +503,7 @@ describe('${className}', () => {
     const targetDir = path.join(process.cwd(), options.dir, 'interceptors');
     const filePath = path.join(targetDir, `${fileName}.interceptor.ts`);
 
-    const content = `import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@rapidojs/common';
+    const content = `import { Injectable, Interceptor, ExecutionContext, CallHandler } from '@rapidojs/common';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 
@@ -512,7 +512,7 @@ import { map, tap } from 'rxjs/operators';
  * ${name} 拦截器
  */
 @Injectable()
-export class ${className} implements NestInterceptor {
+export class ${className} implements Interceptor {
   /**
    * 拦截请求和响应
    */
