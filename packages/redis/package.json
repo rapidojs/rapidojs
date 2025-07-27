@@ -1,0 +1,67 @@
+{
+  "name": "@rapidojs/redis",
+  "version": "1.0.0",
+  "description": "RapidoJS Redis 集成模块 - 提供与 Redis 的深度集成和声明式缓存操作",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:swc && pnpm run build:types",
+    "build:swc": "swc src -d dist --strip-leading-paths --source-maps --copy-files",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist",
+    "clean": "rm -rf dist",
+    "test": "vitest --run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage"
+  },
+  "dependencies": {
+    "@rapidojs/common": "workspace:*",
+    "@rapidojs/core": "workspace:*",
+    "ioredis": "^5.4.1",
+    "reflect-metadata": "^0.2.2",
+    "tsyringe": "^4.8.0"
+  },
+  "devDependencies": {
+    "@swc/cli": "^0.4.1-nightly.20240914",
+    "@swc/core": "^1.7.26",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.6.3",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@rapidojs/core": "^1.0.0",
+    "ioredis": "^5.0.0",
+    "reflect-metadata": "^0.2.0"
+  },
+  "keywords": [
+    "rapidojs",
+    "redis",
+    "cache",
+    "session",
+    "pubsub",
+    "ioredis",
+    "fastify",
+    "typescript"
+  ],
+  "author": "RapidoJS Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rapidojs/rapidojs.git",
+    "directory": "packages/redis"
+  },
+  "bugs": {
+    "url": "https://github.com/rapidojs/rapidojs/issues"
+  },
+  "homepage": "https://rapidojs.dev"
+}

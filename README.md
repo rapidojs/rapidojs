@@ -417,6 +417,89 @@ export class AppModule {}
 // GET /health/liveness - Kubernetes liveness probe
 ```
 
+### Redis Cache Module
+
+```typescript
+import { RedisModule, RedisService, RedisCacheService, InjectRedis } from '@rapidojs/redis';
+import type { Redis } from 'ioredis';
+
+// Single connection configuration
+@Module({
+  imports: [
+    RedisModule.forRoot({
+      connection: {
+        host: 'localhost',
+        port: 6379,
+        password: 'your-password',
+        db: 0,
+      },
+    }),
+  ],
+})
+export class AppModule {}
+
+// Multiple connections configuration
+@Module({
+  imports: [
+    RedisModule.forRoot({
+      connections: [
+        {
+          name: 'default',
+          host: 'localhost',
+          port: 6379,
+          isDefault: true,
+        },
+        {
+          name: 'cache',
+          host: 'localhost',
+          port: 6380,
+        },
+      ],
+    }),
+  ],
+})
+export class AppModule {}
+
+// Using Redis in services
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRedis() private readonly redis: Redis,
+    @InjectRedis('cache') private readonly cacheRedis: Redis,
+    private readonly cacheService: RedisCacheService
+  ) {}
+
+  async getUser(id: string) {
+    // Try cache first
+    const cached = await this.cacheService.get(`user:${id}`);
+    if (cached) {
+      return cached;
+    }
+
+    // Fetch from database
+    const user = await this.fetchUserFromDB(id);
+    
+    // Cache for 1 hour
+    await this.cacheService.set(`user:${id}`, user, 3600);
+    
+    return user;
+  }
+
+  async updateUserCache(id: string, user: any) {
+    // Update cache
+    await this.cacheService.set(`user:${id}`, user, 3600);
+    
+    // Use raw Redis client for complex operations
+    await this.redis.zadd('user:scores', Date.now(), id);
+  }
+
+  private async fetchUserFromDB(id: string) {
+    // Database logic here
+    return { id, name: 'John Doe', email: 'john@example.com' };
+  }
+}
+```
+
 ## 📊 Performance Benchmark
 
 | Framework | Requests/sec (RPS) | Latency (ms) | Memory Usage (MB) |
@@ -483,6 +566,7 @@ rapidojs/
 │   ├── core/                   # @rapidojs/core
 │   ├── config/                 # @rapidojs/config
 │   ├── auth/                   # @rapidojs/auth
+│   ├── redis/                  # @rapidojs/redis
 │   └── cli/                    # @rapidojs/cli
 ├── apps/                       # Example applications
 │   ├── example-api/           # API example
@@ -509,6 +593,7 @@ rapidojs/
 - [x] **Lifecycle Hooks** - `OnModuleInit`, `OnApplicationBootstrap`, etc.
 - [x] **Health Check Module** - Built-in health monitoring endpoints
 - [x] **Task Scheduling** - `@rapidojs/schedule` package with declarative task scheduling
+- [x] **Redis Cache Module** - `@rapidojs/redis` package with multi-connection support
 - [x] **Test Coverage** - Comprehensive test suite with 477 passing tests
 
 ### 🔄 In Progress (v1.1.0 "武库")
@@ -516,14 +601,19 @@ rapidojs/
 - [x] Enhanced CLI features (`add`, `g <schematic>`)
 - [ ] Complete documentation site
 
-### 🎯 Future Plans (v1.2.0 "数据引擎")
+### 🔄 In Progress (v1.2.0 "数据引擎")
 
+- [x] Cache module with `@rapidojs/redis`
 - [ ] Database integration with `@rapidojs/typeorm`
-- [ ] Cache module with `@rapidojs/redis`
 - [ ] Official example projects
+
+### 🎯 Future Plans (v1.3.0)
+
 - [ ] WebSocket support
 - [ ] GraphQL integration
 - [ ] Microservices support
+- [ ] Message queue integration
+- [ ] Distributed tracing
 
 ## 📚 Documentation
 

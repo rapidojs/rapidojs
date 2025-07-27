@@ -23,6 +23,7 @@
 - [拦截器](./interceptors.md) - AOP 和请求响应拦截
 - [生命周期钩子](./lifecycle-hooks.md) - 应用生命周期管理
 - [健康检查](./health-check.md) - 应用健康监控
+- [Redis 缓存](./redis.md) - Redis 集成和缓存管理
 - [全局功能](./global-features.md) - 全局配置和功能
 - [测试](./testing.md) - 单元测试和集成测试
 

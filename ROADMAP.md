@@ -177,12 +177,14 @@ v1.1.0 版本已成功交付“武库”(The Arsenal)，为框架配备了一套
     * 模块配置方法：`RedisModule.forRoot()` 和 `RedisModule.forRootAsync()`。
     * 辅助注入装饰器：`@InjectRedis()`。
     * 支持多客户端注入与管理。
+    * 缓存服务：`RedisCacheService`，提供高级缓存操作。
+    * 工具类：`RedisUtils`，提供分布式锁、限流器等实用功能。
 * **关键实现路径**:
-    * [ ] **技术选型**: 选择并集成 `ioredis` 库。
-    * [ ] **支持多客户端**: 重构 `RedisModule`，允许通过 `name` 属性来注册和注入多个不同的 Redis 客户端实例（例如 `@InjectRedis('cache')`, `@InjectRedis('session')`）。
-    * [ ] **实现 `RedisModule`**: 实现模块的静态配置方法，创建并注册 Redis 客户端 Provider。
-    * [ ] **集成生命周期钩子**: 确保 Redis 连接在应用关闭时被优雅地断开。
-    * [ ] **编写测试**: 确保 Redis 客户端能够被成功配置和注入。
+    * [x] **技术选型**: 选择并集成 `ioredis` 库。
+    * [x] **支持多客户端**: 重构 `RedisModule`，允许通过 `name` 属性来注册和注入多个不同的 Redis 客户端实例（例如 `@InjectRedis('cache')`, `@InjectRedis('session')`）。
+    * [x] **实现 `RedisModule`**: 实现模块的静态配置方法，创建并注册 Redis 客户端 Provider。
+    * [x] **集成生命周期钩子**: 确保 Redis 连接在应用关闭时被优雅地断开。
+    * [x] **编写测试**: 确保 Redis 客户端能够被成功配置和注入。
 
 ##### **3. 官方示例项目 (Official Example Projects)**
 
