@@ -104,12 +104,37 @@ export class UsersController {
 export class UsersModule {}
 ```
 
-### 4. 依赖注入
+### 4. 增强依赖注入
 
 ```typescript
+// 基础依赖注入
 @Injectable()
 export class UsersService {
   constructor(private readonly repository: UsersRepository) {}
+}
+
+// 作用域管理
+@RequestScoped()
+@Injectable()
+export class UserContextService {
+  // 每个请求一个实例
+}
+
+// 条件注入
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Injectable()
+export class ProductionCacheService {
+  // 只在生产环境注册
+}
+
+// 懒加载
+@Injectable()
+export class MyService {
+  constructor(
+    @Inject() @Lazy() private heavyService: HeavyComputationService
+  ) {
+    // heavyService 只有在第一次访问时才会实例化
+  }
 }
 ```
 
@@ -144,16 +169,35 @@ export class DatabaseService {
 
 ### ✅ 已完成功能
 
-- [x] **基础装饰器系统** (`@Controller`, `@Get`, `@Post` 等)
+#### 核心框架 (v1.1.0)
+- [x] **增强装饰器系统** (`@Controller`, `@Get`, `@Post` 等)
+- [x] **增强依赖注入容器** (v1.1.0 核心特性)
+  - [x] **循环依赖检测** - 自动检测并警告循环依赖
+  - [x] **多种作用域** - Singleton/Transient/Request 作用域支持
+  - [x] **懒加载注入** - `@Lazy` 装饰器支持延迟实例化
+  - [x] **条件注入** - `@ConditionalOn` 基于环境/配置的条件注册
+  - [x] **智能代理** - 透明的懒加载代理机制
+- [x] **高级 DI 装饰器**
+  - [x] `@Scope(DependencyScope)` - 通用作用域装饰器
+  - [x] `@Singleton()` - 单例作用域装饰器
+  - [x] `@Transient()` - 瞬态作用域装饰器
+  - [x] `@RequestScoped()` - 请求级作用域装饰器
+  - [x] `@ConditionalOn()` - 条件注入装饰器
+  - [x] `@Lazy()` - 懒加载装饰器
 - [x] **参数装饰器** (`@Param`, `@Query`, `@Body`, `@Headers`)
 - [x] **内置管道** (`ParseIntPipe`, `ParseBoolPipe`, `ValidationPipe` 等)
 - [x] **NestJS 风格管道** (`@Param('id', ParseIntPipe)`)
 - [x] **自动 DTO 验证** (智能识别 DTO 类型)
 - [x] **模块系统** (`@Module`, `@Injectable`)
 - [x] **异常处理** (`HttpException`, `BadRequestException` 等)
+
+#### 扩展功能
 - [x] **配置管理** (`@rapidojs/config` - 支持 .env 和 YAML)
-- [x] **测试支持** (Vitest 集成)
-- [x] **完整的文档站点**
+- [x] **拦截器系统** (`@UseInterceptors`, AOP 支持)
+- [x] **生命周期钩子** (`OnModuleInit`, `OnApplicationBootstrap` 等)
+- [x] **健康检查** (内置 `/health` 端点)
+- [x] **测试支持** (Vitest 集成，90%+ 覆盖率)
+- [x] **完整的文档站点** (包含增强 DI 容器专门文档)
 
 ### 🔄 开发中功能
 

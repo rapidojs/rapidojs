@@ -22,7 +22,12 @@ v1.1.0 版本已成功发布，为框架奠定了坚实的基础，使其成为�
 
 #### **已完成的核心能力:**
 
-* **核心引擎 (`@rapidojs/core`)**: 实现了基于装饰器的路由、以 `tsyringe` 为核心的依赖注入、模块化系统 (`@Module`) 以及 `RapidoFactory` 核心启动器。
+* **增强核心引擎 (`@rapidojs/core`)**: 实现了基于装饰器的路由、增强的依赖注入容器、模块化系统 (`@Module`) 以及 `RapidoFactory` 核心启动器。
+  - **✅ 增强 DI 容器**: 支持循环依赖检测、懒加载、作用域管理 (Singleton/Transient/Request)
+  - **✅ 高级装饰器**: `@ConditionalOn`、`@Lazy`、`@Scope`、`@RequestScoped`、`@Transient`、`@Singleton`
+  - **✅ 智能依赖管理**: 自动检测并警告循环依赖，支持条件注入和懒加载
+  - **✅ 请求级作用域**: 支持请求级别的依赖注入作用域管理
+  - **✅ 条件注入**: 基于环境变量、配置或自定义条件的服务注册
 * **请求管道 (`Pipeline`)**: 提供了完整的请求参数处理和数据验证流程，包括参数装饰器 (`@Body`, `@Query` 等)和强大的管道机制 (`PipeTransform`, `@UsePipes`, 参数级管道)。
 * **韧性与健壮性 (`Resilience`)**: 内置了全局异常过滤器 (`@Catch`) 和基础的 `HttpException` 类，并提供了企业级的配置管理模块 (`@rapidojs/config`)，支持多源加载和启动时校验。
 * **开发者体验 (`Developer Experience`)**: 推出了 `@rapidojs/cli` 命令行工具，支持通过 `rapido new` 命令一键生成项目骨架，并提供 `rapido add` 命令快速添加模块，以及 `rapido g` 命令生成控制器、服务、守卫、拦截器等代码文件。
@@ -124,7 +129,10 @@ v1.1.0 版本已成功交付“武库”(The Arsenal)，为框架配备了一套
 
 #### **已完成的核心能力:**
 
-* **核心引擎 (`@rapidojs/core`)**: 实现了基于装饰器的路由、依赖注入、模块化系统。
+* **增强核心引擎 (`@rapidojs/core`)**: 实现了基于装饰器的路由、增强的依赖注入容器、模块化系统。
+  - **增强 DI 容器**: 支持循环依赖检测、懒加载、作用域管理 (Singleton/Transient/Request)
+  - **高级装饰器**: `@ConditionalOn`、`@Lazy`、`@Scope`、`@RequestScoped`、`@Transient`、`@Singleton`
+  - **智能依赖管理**: 自动检测并警告循环依赖，支持条件注入和懒加载
 * **请求管道 (`Pipeline`)**: 提供了强大的请求参数处理和数据验证流程。
 * **韧性与健壮性 (`Resilience`)**: 内置了全局异常过滤器和企业级的配置管理模块。
 * **开发者体验 (`Developer Experience`)**: 推出了 `@rapidojs/cli` 命令行工具。

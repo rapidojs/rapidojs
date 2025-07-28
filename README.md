@@ -22,11 +22,14 @@
 - 🎯 **TypeScript First** - Complete type safety support with top-tier developer experience
 - 🎨 **Decorator Driven** - Declarative programming, making business logic the only protagonist in your code
 - 🔧 **Smart Pipe System** - Automatic DTO detection and validation, NestJS-like development experience
-- 📦 **Modular Architecture** - Dependency injection based on `tsyringe`, building testable and maintainable applications
+- 📦 **Enhanced DI Container** - Advanced dependency injection with circular dependency detection, lazy loading, and multiple scopes
+- 🔄 **Smart Dependency Management** - Automatic circular dependency detection with warnings and resolution suggestions
+- 🎯 **Advanced Decorators** - Conditional injection, lazy loading, and flexible scoping decorators
 - ⚡ **ESM Native** - Modern ES module support, embracing future standards
 - 🛠️ **Developer Friendly** - Built-in CLI tools for one-click project scaffolding
 - 🔐 **Authentication & Authorization** - Built-in JWT authentication with guards and strategy pattern
 - 🛡️ **Security** - Guard system for route protection and public route exemptions
+- 🔄 **Lifecycle Management** - Complete application lifecycle hooks and event system
 
 ## 🚀 Quick Start
 
@@ -194,10 +197,41 @@ curl -X POST http://localhost:3000/api/users \
 
 ### Decorator System
 
+#### Basic Decorators
 ```typescript
 // Route decorators
 @Controller('/api')    // Controller prefix
 @Get('/users')         // GET route
+@Post('/users')        // POST route
+@Put('/users/:id')     // PUT route
+@Delete('/users/:id')  // DELETE route
+```
+
+#### Advanced DI Decorators
+```typescript
+// Dependency scope decorators
+@Singleton()           // Single instance (default)
+@Transient()          // New instance every time
+@RequestScoped()      // One instance per request
+@Scope(DependencyScope.SINGLETON) // Explicit scope
+
+// Conditional injection
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Injectable()
+class ProductionService {}
+
+@ConditionalOn({ condition: () => process.platform === 'darwin' })
+@Injectable()
+class MacOSService {}
+
+// Lazy loading
+@Injectable()
+class MyService {
+  constructor(
+    @Lazy() private heavyService: HeavyService
+  ) {}
+  // heavyService is only instantiated when first accessed
+}
 @Post('/users')        // POST route
 @Put('/users/:id')     // PUT route
 @Delete('/users/:id')  // DELETE route
@@ -207,6 +241,184 @@ curl -X POST http://localhost:3000/api/users \
 @Query('page')                 // Query parameter
 @Body()                        // Request body
 @Headers('authorization')      // Request header
+
+// Advanced DI decorators
+@Scope(DependencyScope.SINGLETON)  // Dependency scope
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })  // Conditional injection
+@Lazy()  // Lazy loading
+@Injectable()
+export class MyService {}
+
+// Scoped dependencies
+@RequestScoped()  // Request-level scope
+@Transient()      // New instance every time
+@Singleton()      // Single instance (default)
+export class ScopedService {}
+```
+
+## 🔥 Enhanced Dependency Injection
+
+Rapido.js features a powerful enhanced DI container with advanced capabilities:
+
+### Dependency Scopes
+
+```typescript
+import { Injectable, Scope, DependencyScope, RequestScoped, Transient, Singleton } from '@rapidojs/core';
+
+// Singleton scope (default) - one instance per application
+@Singleton()
+@Injectable()
+export class DatabaseService {
+  // Shared across the entire application
+}
+
+// Transient scope - new instance every time
+@Transient()
+@Injectable()
+export class LoggerService {
+  // New instance for each injection
+}
+
+// Request scope - one instance per HTTP request
+@RequestScoped()
+@Injectable()
+export class UserContextService {
+  // Shared within a single request
+}
+```
+
+### Conditional Injection
+
+```typescript
+import { ConditionalOn, Injectable } from '@rapidojs/core';
+
+// Only register in production environment
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Injectable()
+export class ProductionCacheService {
+  // Only available in production
+}
+
+// Register based on configuration
+@ConditionalOn({ config: 'feature.redis', value: 'true' })
+@Injectable()
+export class RedisService {
+  // Only when Redis feature is enabled
+}
+
+// Custom condition function
+@ConditionalOn({ condition: () => process.platform === 'darwin' })
+@Injectable()
+export class MacOSService {
+  // Only on macOS
+}
+```
+
+### Lazy Loading
+
+```typescript
+import { Injectable, Lazy, Inject } from '@rapidojs/core';
+
+@Injectable()
+export class MyService {
+  constructor(
+    @Inject() @Lazy() private heavyService: HeavyComputationService
+  ) {
+    // HeavyComputationService is only instantiated when first accessed
+  }
+
+  async doWork() {
+    // Service is instantiated here on first access
+    return await this.heavyService.compute();
+  }
+}
+```
+
+### Circular Dependency Detection
+
+```typescript
+// The enhanced container automatically detects and warns about circular dependencies
+@Injectable()
+export class ServiceA {
+  constructor(private serviceB: ServiceB) {}
+}
+
+@Injectable()
+export class ServiceB {
+  constructor(private serviceA: ServiceA) {}
+  // ⚠️ Circular dependency detected: ServiceA -> ServiceB -> ServiceA
+  // Use forwardRef() to resolve
+}
+```
+
+### Enhanced Dependency Injection
+
+#### Basic Injection
+```typescript
+// Service injection
+@Injectable()
+export class UsersService {
+  findAll() {
+    return [];
+  }
+}
+
+// Constructor injection
+@Controller('/users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+}
+```
+
+#### Advanced DI Features
+```typescript
+// Circular dependency detection and handling
+@Injectable()
+export class ServiceA {
+  constructor(@Inject(forwardRef(() => ServiceB)) private serviceB: ServiceB) {}
+}
+
+@Injectable()
+export class ServiceB {
+  constructor(private serviceA: ServiceA) {}
+}
+
+// Multiple dependency scopes
+@Singleton()  // Default: one instance for entire app
+@Injectable()
+export class DatabaseService {}
+
+@Transient()  // New instance every injection
+@Injectable()
+export class LoggerService {}
+
+@RequestScoped()  // One instance per HTTP request
+@Injectable()
+export class RequestContextService {}
+
+// Conditional injection based on environment
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Injectable()
+export class ProductionCacheService {}
+
+@ConditionalOn({ env: 'NODE_ENV', value: 'development' })
+@Injectable()
+export class DevCacheService {}
+
+// Lazy loading for heavy services
+@Injectable()
+export class ApiService {
+  constructor(
+    @Lazy() private analyticsService: AnalyticsService,
+    @Lazy() private reportingService: ReportingService
+  ) {}
+  
+  async processData() {
+    // Services are only instantiated when first accessed
+    await this.analyticsService.track('data_processed');
+    return this.reportingService.generate();
+  }
+}
 ```
 
 ### Smart Pipe System
