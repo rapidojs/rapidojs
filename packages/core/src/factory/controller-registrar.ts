@@ -39,6 +39,7 @@ export class ControllerRegistrar {
     private async registerController(controller: Type<any>): Promise<void> {
     // 使用新的统一元数据系统
     const moduleMetadata: ModuleMetadata = Reflect.getMetadata(MODULE_METADATA_KEY, controller);
+    
     if (!moduleMetadata?.prefix) {
       return; // Silently ignore classes without @Controller decorator
     }
@@ -72,7 +73,8 @@ export class ControllerRegistrar {
           // Execute interceptors
           const result = await interceptorsExecutor(context, async () => {
             const args = await this.extractArguments(request, reply, params, controller, route.methodName);
-            return await (controllerInstance as any)[route.methodName](...args);
+            const methodResult = await (controllerInstance as any)[route.methodName](...args);
+            return methodResult;
           });
           
           return result;
@@ -85,7 +87,18 @@ export class ControllerRegistrar {
       const fastifyMethod = route.method.toLowerCase() as keyof FastifyInstance;
 
       if (typeof (this.fastify as any)[fastifyMethod] === 'function') {
-        (this.fastify as any)[fastifyMethod](fullPath, {}, handler);
+        // 设置路由配置，包含控制器和方法信息
+        const routeConfig = {
+          preHandler: async (request: any, reply: any) => {
+            // 在 preHandler 中设置路由上下文，确保在其他钩子之前执行
+            (request as any).routeContext = {
+              controller,
+              methodName: route.methodName
+            };
+          }
+        };
+        
+        (this.fastify as any)[fastifyMethod](fullPath, routeConfig, handler);
       } else {
         console.warn(`Unsupported HTTP method: ${route.method} for path ${fullPath}`);
       }
@@ -148,20 +161,26 @@ export class ControllerRegistrar {
     controller: Type<any>,
     methodName: string | symbol
   ): Promise<(context: any, next: () => Promise<any>) => Promise<any>> {
-    // Get global interceptors
-    let globalInterceptors: InterceptorMetadata[] = [];
-    if ('getGlobalInterceptors' in this.fastify) {
-      globalInterceptors = (this.fastify as any).getGlobalInterceptors();
-    }
-
-    // Get class and method interceptors
-    const classInterceptors = Reflect.getMetadata(INTERCEPTORS_METADATA, controller) || [];
-    const methodInterceptors = Reflect.getMetadata(INTERCEPTORS_METADATA, (controller.prototype as any)[methodName]) || [];
-    
-    // Combine all interceptors: global -> class -> method
-    const allInterceptors = [...globalInterceptors, ...classInterceptors, ...methodInterceptors];
-
+    // 返回一个动态执行器，在运行时获取全局拦截器
     return async (context: any, next: () => Promise<any>): Promise<any> => {
+      // 在运行时动态获取全局拦截器
+      let globalInterceptors: (Interceptor | Type<Interceptor>)[] = [];
+      if ('getGlobalInterceptors' in this.fastify) {
+        globalInterceptors = (this.fastify as any).getGlobalInterceptors();
+      }
+
+      // Get class and method interceptors
+      const classInterceptors = Reflect.getMetadata(INTERCEPTORS_METADATA, controller) || [];
+      const methodInterceptors = Reflect.getMetadata(INTERCEPTORS_METADATA, controller.prototype, methodName) || [];
+      
+      // Combine all interceptors: global -> class -> method
+      const allInterceptors = [...globalInterceptors, ...classInterceptors, ...methodInterceptors];
+      
+      // Debug: 输出拦截器信息（仅在有拦截器时）
+      // if (allInterceptors.length > 0) {
+      //   process.stdout.write(`\n🔧 [拦截器执行] ${controller.name}.${String(methodName)} - 全局: ${globalInterceptors.length}, 总计: ${allInterceptors.length}\n`);
+      // }
+
       if (allInterceptors.length === 0) {
         return next();
       }
@@ -181,7 +200,7 @@ export class ControllerRegistrar {
           handle: executeInterceptor
         };
         
-        return interceptorInstance.intercept(context, callHandler);
+        return await interceptorInstance.intercept(context, callHandler);
       };
       
       return executeInterceptor();
@@ -191,7 +210,7 @@ export class ControllerRegistrar {
   /**
    * Create interceptor instance from metadata
    */
-  private async createInterceptorInstance(interceptor: InterceptorMetadata): Promise<Interceptor> {
+  private async createInterceptorInstance(interceptor: Interceptor | Type<Interceptor>): Promise<Interceptor> {
     if (typeof interceptor === 'function') {
       // Interceptor constructor - resolve through DI container
       return await this.resolveFromContainer(interceptor) as Interceptor;
@@ -239,6 +258,10 @@ export class ControllerRegistrar {
       // Special handling for @Res() decorator to pass the raw reply object
       if (param.type === 'response') {
         result = reply;
+      } else if (param.type === 'uploaded_file' || param.type === 'uploaded_files') {
+        // For multipart file uploads, we need to ensure the request has been processed
+        // The multipart plugin should have already parsed the files
+        result = await param.factory(param.data, context);
       } else {
         result = await param.factory(param.data, context);
       }

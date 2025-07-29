@@ -1,4 +1,4 @@
-import { ROUTE_ARGS_METADATA as COMMON_ROUTE_ARGS_METADATA } from '@rapidojs/common';
+import { ROUTE_ARGS_METADATA as COMMON_ROUTE_ARGS_METADATA, METADATA_KEY as COMMON_METADATA_KEY } from '@rapidojs/common';
 
 /**
  * A collection of constant values used as keys for reflect-metadata.
@@ -21,7 +21,8 @@ export const METADATA_KEY = {
   PARAM_PIPES: Symbol.for('rapido:param_pipes'),
   GUARDS: Symbol('controller:guards'),
   INTERCEPTORS: Symbol.for('rapido:interceptors'),
-  ROUTE_ARGS_METADATA: COMMON_ROUTE_ARGS_METADATA
+  ROUTE_ARGS_METADATA: COMMON_ROUTE_ARGS_METADATA,
+  MULTIPART: COMMON_METADATA_KEY.MULTIPART
 };
 
 export const MODULE_METADATA = 'module:metadata';

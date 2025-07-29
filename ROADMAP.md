@@ -81,12 +81,18 @@ v1.1.0 版本已成功发布，为框架奠定了坚实的基础，使其成为�
     * 辅助装饰器：`@NoTransform()`，用于在全局拦截器下跳过特定路由的响应转换。
     * 生命周期接口：`OnApplicationBootstrap`, `BeforeApplicationShutdown` 等。
     * 一个内置的、可配置的 `/health` 健康检查端点。
+    * 文件上传支持: 提供 `@UseMultiPart()`、`@UploadedFile()` 和 `@UploadedFiles()` 装饰器，简化文件上传处理。
 * **关键实现路径**:
     * [x] **实现拦截器逻辑**: 修改核心注册器的包裹处理函数，将其改造为支持 `next()` 模式的调用链。
     * [x] **实现内置拦截器**: 创建 `TransformInterceptor` 和 `LoggingInterceptor` 作为通用工具。
     * [x] **实现 @NoTransform() 装饰器**: 为 `TransformInterceptor` 增加元数据检查逻辑，使其可以被 `@NoTransform()` 豁免。
     * [x] **实现生命周期钩子**: 在 `RapidoFactory` 的启动和关闭流程中，增加对生命周期钩子的扫描和执行。
     * [x] **实现健康检查**: 在核心中增加可配置的健康检查模块。
+    * [x] 集成 `Multipart` 插件:
+        [x] 创建 `@UseMultiPart()` 装饰器: 这是一个方法装饰器，用于在特定路由上启用 `multipart/form-data` 解析。它内部会为该路由动态注册 `@fastify/multipart` 插件。可以接收插件选项作为参数。
+        [x] 创建 `@UploadedFile()` 参数装饰器: 用于在控制器方法中直接注入单个上传的文件对象 (`MultipartFile`)。
+        [x] 创建 `@UploadedFiles()` 参数装饰器: 用于注入一个包含所有上传文件的数组 (`MultipartFile[]`)。
+        [x] 定义 `MultipartFile` 接口: 在 `@rapidojs/common` 中定义一个标准化的文件对象接口，屏蔽底层实现的差异。
 
 ##### **3. `@rapidojs/schedule` - 任务调度模块**
 

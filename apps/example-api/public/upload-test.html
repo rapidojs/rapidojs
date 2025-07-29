@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RapidoJS 文件上传测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .upload-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 RapidoJS Multipart 文件上传测试</h1>
+        
+        <div class="upload-section">
+            <h3>1. 单文件上传</h3>
+            <input type="file" id="singleFile" accept="image/*">
+            <input type="text" id="singleDescription" placeholder="文件描述（可选）">
+            <button onclick="uploadSingle()">上传单个文件</button>
+            <div id="singleResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="upload-section">
+            <h3>2. 多文件上传</h3>
+            <input type="file" id="multipleFiles" multiple accept="image/*">
+            <input type="text" id="multipleDescription" placeholder="文件描述（可选）">
+            <button onclick="uploadMultiple()">上传多个文件</button>
+            <div id="multipleResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="upload-section">
+            <h3>3. 混合上传（文件 + 表单数据）</h3>
+            <input type="file" id="mixedFile" accept="image/*">
+            <input type="text" id="mixedTitle" placeholder="标题">
+            <input type="text" id="mixedCategory" placeholder="分类">
+            <button onclick="uploadMixed()">混合上传</button>
+            <div id="mixedResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="upload-section">
+            <h3>4. 获取所有上传文件</h3>
+            <input type="file" id="anyFiles" multiple>
+            <input type="text" id="anyMetadata" placeholder="元数据（JSON格式）">
+            <button onclick="uploadAny()">上传任意文件</button>
+            <div id="anyResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="info">
+            <strong>注意：</strong>
+            <ul>
+                <li>所有请求需要认证头：<code>Authorization: Bearer valid-api-key</code></li>
+                <li>文件大小限制：10MB</li>
+                <li>文件数量限制：10个</li>
+                <li>支持的图片格式：JPEG, PNG, GIF, WebP</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:3000';
+        const AUTH_TOKEN = 'valid-api-key';
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${isError ? 'error' : 'success'}`;
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function uploadSingle() {
+            const fileInput = document.getElementById('singleFile');
+            const description = document.getElementById('singleDescription').value;
+            
+            if (!fileInput.files[0]) {
+                showResult('singleResult', { error: '请选择一个文件' }, true);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            if (description) formData.append('description', description);
+
+            try {
+                const response = await fetch(`${API_BASE}/upload/single`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                showResult('singleResult', result, !response.ok);
+            } catch (error) {
+                showResult('singleResult', { error: error.message }, true);
+            }
+        }
+
+        async function uploadMultiple() {
+            const fileInput = document.getElementById('multipleFiles');
+            const description = document.getElementById('multipleDescription').value;
+            
+            if (!fileInput.files.length) {
+                showResult('multipleResult', { error: '请选择至少一个文件' }, true);
+                return;
+            }
+
+            const formData = new FormData();
+            for (let file of fileInput.files) {
+                formData.append('files', file);
+            }
+            if (description) formData.append('description', description);
+
+            try {
+                const response = await fetch(`${API_BASE}/upload/multiple`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                showResult('multipleResult', result, !response.ok);
+            } catch (error) {
+                showResult('multipleResult', { error: error.message }, true);
+            }
+        }
+
+        async function uploadMixed() {
+            const fileInput = document.getElementById('mixedFile');
+            const title = document.getElementById('mixedTitle').value;
+            const category = document.getElementById('mixedCategory').value;
+            
+            if (!fileInput.files[0]) {
+                showResult('mixedResult', { error: '请选择一个文件' }, true);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('avatar', fileInput.files[0]);
+            if (title) formData.append('title', title);
+            if (category) formData.append('category', category);
+
+            try {
+                const response = await fetch(`${API_BASE}/upload/mixed`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                showResult('mixedResult', result, !response.ok);
+            } catch (error) {
+                showResult('mixedResult', { error: error.message }, true);
+            }
+        }
+
+        async function uploadAny() {
+            const fileInput = document.getElementById('anyFiles');
+            const metadata = document.getElementById('anyMetadata').value;
+            
+            if (!fileInput.files.length) {
+                showResult('anyResult', { error: '请选择至少一个文件' }, true);
+                return;
+            }
+
+            const formData = new FormData();
+            for (let file of fileInput.files) {
+                formData.append('uploads', file);
+            }
+            if (metadata) formData.append('metadata', metadata);
+
+            try {
+                const response = await fetch(`${API_BASE}/upload/any`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                showResult('anyResult', result, !response.ok);
+            } catch (error) {
+                showResult('anyResult', { error: error.message }, true);
+            }
+        }
+    </script>
+</body>
+</html>

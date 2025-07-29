@@ -539,6 +539,59 @@ export class AuthController {
 }
 ```
 
+### File Upload
+
+```typescript
+import { UseMultipart, UploadedFile, UploadedFiles, MultipartFile } from '@rapidojs/common';
+
+@Controller('/api/upload')
+export class UploadController {
+  // Single file upload
+  @Post('/single')
+  @UseMultipart()
+  uploadSingle(@UploadedFile() file: MultipartFile) {
+    console.log('File:', file.filename, file.mimetype, file.buffer.length);
+    return {
+      message: 'File uploaded successfully',
+      filename: file.filename,
+      size: file.buffer.length,
+      mimetype: file.mimetype
+    };
+  }
+
+  // Multiple files upload
+  @Post('/multiple')
+  @UseMultipart()
+  uploadMultiple(@UploadedFiles() files: MultipartFile[]) {
+    console.log('Files count:', files.length);
+    return {
+      message: 'Files uploaded successfully',
+      files: files.map(file => ({
+        filename: file.filename,
+        size: file.buffer.length,
+        mimetype: file.mimetype
+      }))
+    };
+  }
+
+  // Upload with form data
+  @Post('/with-data')
+  @UseMultipart()
+  uploadWithData(
+    @UploadedFile() file: MultipartFile,
+    @Body() data: any
+  ) {
+    return {
+      file: {
+        filename: file.filename,
+        size: file.buffer.length
+      },
+      formData: data
+    };
+  }
+}
+```
+
 ### Interceptors System
 
 ```typescript
@@ -806,6 +859,7 @@ rapidojs/
 - [x] **Health Check Module** - Built-in health monitoring endpoints
 - [x] **Task Scheduling** - `@rapidojs/schedule` package with declarative task scheduling
 - [x] **Redis Cache Module** - `@rapidojs/redis` package with multi-connection support
+- [x] **File Upload Support** - `@UseMultipart`, `@UploadedFile`, `@UploadedFiles` decorators with multipart form data handling
 - [x] **Test Coverage** - Comprehensive test suite with 477 passing tests
 
 ### 🔄 In Progress (v1.1.0 "武库")
@@ -816,7 +870,7 @@ rapidojs/
 ### 🔄 In Progress (v1.2.0 "数据引擎")
 
 - [x] Cache module with `@rapidojs/redis`
-- [ ] Database integration with `@rapidojs/typeorm`
+- [x] Database integration with `@rapidojs/typeorm`
 - [ ] Official example projects
 
 ### 🎯 Future Plans (v1.3.0)
@@ -835,6 +889,7 @@ rapidojs/
 - [🔧 Pipe System](./docs/pipes.md)
 - [📦 Module System](./docs/modules.md)
 - [⚙️ Configuration Management](./docs/configuration.md)
+- [📁 File Upload](./docs/file-upload.md)
 - [🚨 Exception Handling](./docs/exception-filters.md)
 - [🧪 Testing Guide](./docs/testing.md)
 - [⚡ Performance Optimization](./docs/performance.md)

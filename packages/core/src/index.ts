@@ -8,6 +8,9 @@ export * from './exceptions/index.js';
 export * from './pipes/index.js';
 export * from './health/index.js';
 
+// Multipart Plugin
+export { MultipartPlugin } from './plugins/multipart.plugin.js';
+
 // Enhanced DI System
 export { EnhancedDIContainer } from './di/enhanced-container.js';
 export { Lazy } from './decorators/lazy.decorator.js';

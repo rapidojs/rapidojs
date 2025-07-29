@@ -8,8 +8,9 @@ import { HttpException } from '../exceptions/http-exception.js';
 import { RapidoApp } from '../interfaces/rapido-app.interface.js';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
 import { PipeTransform } from '../pipes/pipe-transform.interface.js';
-import { CanActivate, LoggerService, Interceptor, OnApplicationBootstrap, BeforeApplicationShutdown, OnModuleInit, OnModuleDestroy } from '@rapidojs/common';
+import { CanActivate, LoggerService, Interceptor, OnApplicationBootstrap, BeforeApplicationShutdown, OnModuleInit, OnModuleDestroy, MultipartOptions } from '@rapidojs/common';
 import { HttpExecutionContextImpl } from '../helpers/execution-context-impl.js';
+import { MultipartPlugin } from '../plugins/multipart.plugin.js';
 
 /**
  * The main factory for creating Rapido.js applications.
@@ -67,6 +68,16 @@ export class RapidoFactory {
     // Decorate the app instance with the addStaticFiles method
     (app as any).addStaticFiles = async (config: StaticFileConfig) => {
       await registerStaticConfig(config);
+    };
+
+    // Decorate the app instance with the enableMultipart method
+    (app as any).enableMultipart = async (options?: MultipartOptions) => {
+      try {
+        await MultipartPlugin.register(app, options);
+      } catch (error) {
+        console.warn('Failed to enable multipart support:', error);
+        // 不抛出错误，允许应用程序继续运行
+      }
     };
 
     await container.registerModule(rootModule);

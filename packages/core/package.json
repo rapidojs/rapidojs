@@ -1,6 +1,6 @@
 {
   "name": "@rapidojs/core",
-  "version": "1.0.5",
+  "version": "1.0.8",
   "type": "module",
   "description": "Core engine for the Rapido.js framework.",
   "license": "MIT",
@@ -38,6 +38,9 @@
     "fastify": "^5.4.0",
     "reflect-metadata": "^0.2.2",
     "tsyringe": "^4.8.0"
+  },
+  "optionalDependencies": {
+    "@fastify/multipart": "^9.0.3"
   },
   "devDependencies": {
     "@swc/core": "^1.13.1",

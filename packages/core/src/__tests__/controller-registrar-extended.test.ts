@@ -121,7 +121,7 @@ describe('ControllerRegistrar 扩展测试', () => {
 
       await registrar.register([RootController]);
       
-      expect(fastify.get).toHaveBeenCalledWith('/', {}, expect.any(Function));
+      expect(fastify.get).toHaveBeenCalledWith('/', expect.any(Object), expect.any(Function));
     });
 
     it('应该正确处理带前缀的路径', async () => {
@@ -135,7 +135,7 @@ describe('ControllerRegistrar 扩展测试', () => {
 
       await registrar.register([ApiController]);
       
-      expect(fastify.get).toHaveBeenCalledWith('/api/v1/users', {}, expect.any(Function));
+      expect(fastify.get).toHaveBeenCalledWith('/api/v1/users', expect.any(Object), expect.any(Function));
     });
 
     it('应该处理重复斜杠', async () => {
@@ -150,7 +150,7 @@ describe('ControllerRegistrar 扩展测试', () => {
       await registrar.register([ApiController]);
       
       // 应该清理路径中的重复斜杠
-      expect(fastify.get).toHaveBeenCalledWith('/api/users', {}, expect.any(Function));
+      expect(fastify.get).toHaveBeenCalledWith('/api/users', expect.any(Object), expect.any(Function));
     });
   });
 
@@ -165,8 +165,8 @@ describe('ControllerRegistrar 扩展测试', () => {
 
       await registrar.register([HttpMethodsController]);
       
-      expect(fastify.get).toHaveBeenCalledWith('/http/get', {}, expect.any(Function));
-      expect(fastify.post).toHaveBeenCalledWith('/http/post', {}, expect.any(Function));
+      expect(fastify.get).toHaveBeenCalledWith('/http/get', expect.any(Object), expect.any(Function));
+      expect(fastify.post).toHaveBeenCalledWith('/http/post', expect.any(Object), expect.any(Function));
     });
 
     it('应该处理不支持的 HTTP 方法', async () => {
@@ -209,7 +209,7 @@ describe('ControllerRegistrar 扩展测试', () => {
 
       await registrar.register([ComplexController]);
       
-      expect(fastify.post).toHaveBeenCalledWith('/complex/endpoint/:id', {}, expect.any(Function));
+      expect(fastify.post).toHaveBeenCalledWith('/complex/endpoint/:id', expect.any(Object), expect.any(Function));
     });
 
     it('应该处理没有参数的方法', async () => {
@@ -223,7 +223,7 @@ describe('ControllerRegistrar 扩展测试', () => {
 
       await registrar.register([NoParamsController]);
       
-      expect(fastify.get).toHaveBeenCalledWith('/no-params/simple', {}, expect.any(Function));
+      expect(fastify.get).toHaveBeenCalledWith('/no-params/simple', expect.any(Object), expect.any(Function));
     });
   });
 
@@ -240,7 +240,7 @@ describe('ControllerRegistrar 扩展测试', () => {
 
       await registrar.register([PipesController]);
       
-      expect(fastify.get).toHaveBeenCalledWith('/pipes/with-pipe', {}, expect.any(Function));
+      expect(fastify.get).toHaveBeenCalledWith('/pipes/with-pipe', expect.objectContaining({ preHandler: expect.any(Function) }), expect.any(Function));
     });
 
     it('应该应用类级管道', async () => {
@@ -255,7 +255,10 @@ describe('ControllerRegistrar 扩展测试', () => {
 
       await registrar.register([ClassPipesController]);
       
-      expect(fastify.get).toHaveBeenCalledWith('/class-pipes/test', {}, expect.any(Function));
+      // 当应用类级管道时，会添加 preHandler 到路由选项中
+      expect(fastify.get).toHaveBeenCalledWith('/class-pipes/test', expect.objectContaining({
+        preHandler: expect.any(Function)
+      }), expect.any(Function));
     });
   });
 
@@ -324,4 +327,4 @@ describe('ControllerRegistrar 扩展测试', () => {
       expect(fastify.get).toHaveBeenCalled();
     });
   });
-}); 
+});
