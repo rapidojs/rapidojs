@@ -1,6 +1,6 @@
 import fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ControllerRegistrar } from './controller-registrar.js';
-import { DIContainer } from '../di/container.js';
+import { EnhancedDIContainer } from '../di/enhanced-container.js';
 import { Type } from '../types.js';
 import { AppConfig, StaticFileConfig } from '../interfaces/app-config.interface.js';
 import { MODULE_METADATA, EXCEPTION_FILTER_METADATA } from '../constants.js';
@@ -8,8 +8,9 @@ import { HttpException } from '../exceptions/http-exception.js';
 import { RapidoApp } from '../interfaces/rapido-app.interface.js';
 import { ExceptionFilter } from '../interfaces/exception-filter.interface.js';
 import { PipeTransform } from '../pipes/pipe-transform.interface.js';
-import { CanActivate, LoggerService, Interceptor, OnApplicationBootstrap, BeforeApplicationShutdown, OnModuleInit, OnModuleDestroy } from '@rapidojs/common';
+import { CanActivate, LoggerService, Interceptor, OnApplicationBootstrap, BeforeApplicationShutdown, OnModuleInit, OnModuleDestroy, MultipartOptions } from '@rapidojs/common';
 import { HttpExecutionContextImpl } from '../helpers/execution-context-impl.js';
+import { MultipartPlugin } from '../plugins/multipart.plugin.js';
 
 /**
  * The main factory for creating Rapido.js applications.
@@ -24,7 +25,7 @@ export class RapidoFactory {
    */
     public static async create(rootModule: Type<any>, config?: AppConfig): Promise<RapidoApp> {
     const app = fastify(config?.fastifyOptions) as unknown as FastifyInstance;
-    const container = new DIContainer();
+    const container = new EnhancedDIContainer();
 
     // Register the app instance so it can be injected
     container.registerProvider({ provide: 'APP_INSTANCE', useValue: app });
@@ -67,6 +68,16 @@ export class RapidoFactory {
     // Decorate the app instance with the addStaticFiles method
     (app as any).addStaticFiles = async (config: StaticFileConfig) => {
       await registerStaticConfig(config);
+    };
+
+    // Decorate the app instance with the enableMultipart method
+    (app as any).enableMultipart = async (options?: MultipartOptions) => {
+      try {
+        await MultipartPlugin.register(app, options);
+      } catch (error) {
+        console.warn('Failed to enable multipart support:', error);
+        // 不抛出错误，允许应用程序继续运行
+      }
     };
 
     await container.registerModule(rootModule);

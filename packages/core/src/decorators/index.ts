@@ -8,3 +8,8 @@ export {
   UsePipes, QueryWithPipe, ParamWithPipe, BodyWithPipe,
   Module, Injectable, Inject, Catch
 } from '@rapidojs/common';
+
+// 导出增强的依赖注入装饰器
+export { Lazy } from './lazy.decorator.js';
+export { ConditionalOn } from './conditional.decorator.js';
+export { Scope, Singleton, Transient, RequestScoped } from './scope.decorator.js';

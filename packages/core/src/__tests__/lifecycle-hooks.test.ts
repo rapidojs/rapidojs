@@ -11,7 +11,7 @@ import {
   OnModuleInit,
   OnModuleDestroy
 } from '@rapidojs/common';
-import { FastifyInstance } from 'fastify';
+import { RapidoApp } from '../interfaces/rapido-app.interface.js';
 
 // 测试用的生命周期服务
 @Injectable()
@@ -115,7 +115,7 @@ class AsyncModule {}
 class ErrorModule {}
 
 describe('生命周期钩子测试', () => {
-  let app: FastifyInstance;
+  let app: RapidoApp;
 
   describe('基本生命周期钩子', () => {
     beforeEach(async () => {

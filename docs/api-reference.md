@@ -42,6 +42,79 @@ export class UsersModule {}
 export class UsersService {}
 ```
 
+### 高级依赖注入装饰器
+
+#### @Scope(scope: DependencyScope)
+
+指定服务的生命周期作用域。
+
+```typescript
+import { Injectable, Scope, DependencyScope } from '@rapidojs/core';
+
+@Scope(DependencyScope.SINGLETON)
+@Injectable()
+export class CacheService {}
+
+@Scope(DependencyScope.TRANSIENT)
+@Injectable()
+export class LoggerService {}
+
+@Scope(DependencyScope.REQUEST)
+@Injectable()
+export class UserContextService {}
+```
+
+#### @Singleton()
+
+将服务标记为单例模式（语法糖）。
+
+```typescript
+@Singleton()
+@Injectable()
+export class DatabaseService {}
+```
+
+#### @Transient()
+
+将服务标记为瞬态模式（语法糖）。
+
+```typescript
+@Transient()
+@Injectable()
+export class UtilityService {}
+```
+
+#### @RequestScoped()
+
+将服务标记为请求级作用域（语法糖）。
+
+```typescript
+@RequestScoped()
+@Injectable()
+export class RequestContextService {}
+```
+
+#### @ConditionalOn(condition: ConditionalOptions)
+
+根据条件注册服务。
+
+```typescript
+// 基于环境变量
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Injectable()
+export class ProductionService {}
+
+// 基于配置
+@ConditionalOn({ config: 'feature.redis', value: 'true' })
+@Injectable()
+export class RedisService {}
+
+// 自定义条件
+@ConditionalOn({ condition: () => process.platform === 'darwin' })
+@Injectable()
+export class MacOSService {}
+```
+
 #### @Global()
 
 将模块标记为全局模块。
@@ -167,6 +240,42 @@ findAll(@Req() request: FastifyRequest) {}
 ```typescript
 @Get()
 findAll(@Res() response: FastifyReply) {}
+```
+
+#### @Lazy()
+
+标记依赖项为懒加载，仅在首次访问时实例化。
+
+```typescript
+import { Injectable, Inject, Lazy } from '@rapidojs/core';
+
+@Injectable()
+export class MyService {
+  constructor(
+    @Inject() @Lazy() private heavyService: HeavyComputationService
+  ) {
+    // HeavyComputationService 只有在第一次被访问时才会实例化
+  }
+
+  doSomething() {
+    // 这里才会真正实例化 heavyService
+    return this.heavyService.compute();
+  }
+}
+```
+
+#### @Inject(token?: string | symbol | Type)
+
+显式指定注入的令牌。
+
+```typescript
+@Injectable()
+export class MyService {
+  constructor(
+    @Inject('DATABASE_CONNECTION') private db: DatabaseConnection,
+    @Inject(CACHE_TOKEN) private cache: CacheService
+  ) {}
+}
 ```
 
 ## 内置管道
@@ -299,11 +408,44 @@ await app.listen(3000);
 // 获取 HTTP 服务器实例
 const server = app.getHttpServer();
 
+// 获取 DI 容器实例
+const container = app.getContainer();
+
+// 从容器中解析服务
+const service = await container.resolve(MyService);
+
 // 初始化应用
 await app.init();
 
 // 关闭应用
 await app.close();
+```
+
+### EnhancedDIContainer
+
+增强的依赖注入容器。
+
+```typescript
+// 注册提供者
+container.register({
+  provide: MyService,
+  useClass: MyService,
+  scope: DependencyScope.SINGLETON,
+  lazy: true,
+  condition: { env: 'NODE_ENV', value: 'production' }
+});
+
+// 解析依赖
+const service = await container.resolve(MyService);
+
+// 检查循环依赖
+const hasCycles = container.hasCyclicDependencies();
+
+// 获取依赖图
+const graph = container.getDependencyGraph();
+
+// 清理容器
+container.clear();
 ```
 
 ## 测试工具
@@ -376,6 +518,53 @@ interface DynamicModule {
   controllers?: Type<any>[];
   imports?: Array<Type<any> | DynamicModule>;
   exports?: Array<Type<any> | string>;
+}
+```
+
+### ConditionalOptions
+
+条件注入选项接口。
+
+```typescript
+interface ConditionalOptions {
+  // 基于环境变量的条件
+  env?: string;        // 环境变量名
+  value?: string;      // 期望的值
+  
+  // 基于配置的条件
+  config?: string;     // 配置键名
+  
+  // 自定义条件函数
+  condition?: () => boolean;
+}
+```
+
+### DependencyScope
+
+依赖作用域枚举。
+
+```typescript
+enum DependencyScope {
+  SINGLETON = 'singleton',
+  TRANSIENT = 'transient',
+  REQUEST = 'request'
+}
+```
+
+### EnhancedProvider
+
+增强的提供者接口。
+
+```typescript
+interface EnhancedProvider {
+  provide: any;
+  useClass?: Type<any>;
+  useValue?: any;
+  useFactory?: (...args: any[]) => any;
+  inject?: any[];
+  scope?: DependencyScope;
+  lazy?: boolean;
+  condition?: ConditionalOptions;
 }
 ```
 

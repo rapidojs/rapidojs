@@ -11,10 +11,11 @@ import { HttpException } from '../exceptions/http-exception.js';
 import { isDynamicModule } from '../utils/module.utils.js';
 import { ModuleType } from '../types.js';
 import { Provider } from '../types.js';
+import { IContainer } from './container.interface.js';
 
-export class DIContainer {
+export class DIContainer implements IContainer {
   private readonly providers = new Map<any, any>();
-  private readonly instances = new Map<any, any>();
+  public readonly instances = new Map<any, any>();
   private readonly modules = new Set<ModuleType>();
   private readonly isResolving = new Set<any>();
   private exceptionFilters: Map<Type<Error>, Type<ExceptionFilter>> = new Map();

@@ -1,14 +1,135 @@
 # 高级功能 (Advanced Features)
 
-本文档介绍 RapidoJS 的高级功能，包括拦截器、生命周期钩子和健康检查。这些功能为构建企业级应用程序提供了强大的支持。
+本文档介绍 RapidoJS 的高级功能，包括增强的依赖注入容器、拦截器、生命周期钩子和健康检查。这些功能为构建企业级应用程序提供了强大的支持。
 
 ## 目录
 
+- [增强的依赖注入容器 (Enhanced DI Container)](#增强的依赖注入容器-enhanced-di-container)
 - [拦截器 (Interceptors)](#拦截器-interceptors)
 - [生命周期钩子 (Lifecycle Hooks)](#生命周期钩子-lifecycle-hooks)
 - [健康检查 (Health Check)](#健康检查-health-check)
 - [功能集成](#功能集成)
 - [最佳实践](#最佳实践)
+
+## 增强的依赖注入容器 (Enhanced DI Container)
+
+增强的 DI 容器是 Rapido.js v1.1.0 的核心特性，提供了企业级的依赖管理能力。
+
+### 核心特性
+
+- **循环依赖检测**: 自动检测并警告循环依赖，提供解决建议
+- **多种作用域**: 支持 Singleton、Transient、Request 三种作用域
+- **懒加载**: 延迟实例化重型服务，优化启动性能
+- **条件注入**: 基于环境、配置或自定义条件的服务注册
+- **智能代理**: 为懒加载服务提供透明的代理机制
+
+### 快速示例
+
+```typescript
+import { 
+  Injectable, 
+  Singleton, 
+  Transient, 
+  RequestScoped,
+  ConditionalOn,
+  Lazy
+} from '@rapidojs/core';
+
+// 单例服务（默认）
+@Singleton()
+@Injectable()
+export class DatabaseService {}
+
+// 瞬态服务
+@Transient()
+@Injectable()
+export class LoggerService {}
+
+// 请求级服务
+@RequestScoped()
+@Injectable()
+export class RequestContextService {}
+
+// 条件注入
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Injectable()
+export class ProductionService {}
+
+// 懒加载
+@Injectable()
+export class ApiService {
+  constructor(
+    @Lazy() private analyticsService: AnalyticsService
+  ) {}
+}
+```
+
+> 📖 **详细文档**: 查看 [增强的依赖注入容器](./enhanced-di-container.md) 获取完整的功能说明和最佳实践。
+
+## 增强的依赖注入容器 (Enhanced DI Container)
+
+Rapido.js 提供了一个功能强大的增强依赖注入容器，支持循环依赖检测、懒加载、作用域管理和条件注入等企业级特性。
+
+### 核心特性概览
+
+```typescript
+import { 
+  Injectable, 
+  Scope, 
+  DependencyScope,
+  ConditionalOn,
+  Lazy,
+  RequestScoped,
+  Transient,
+  Singleton
+} from '@rapidojs/core';
+
+// 作用域管理
+@Singleton() // 单例模式
+@Injectable()
+export class DatabaseService {}
+
+@RequestScoped() // 请求级作用域
+@Injectable()
+export class UserContextService {}
+
+@Transient() // 瞬态作用域
+@Injectable()
+export class LoggerService {}
+
+// 条件注入
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Injectable()
+export class ProductionCacheService {}
+
+// 懒加载
+@Injectable()
+export class MyService {
+  constructor(
+    @Inject() @Lazy() private heavyService: HeavyComputationService
+  ) {}
+}
+```
+
+### 循环依赖检测
+
+增强容器能够自动检测循环依赖并提供解决建议：
+
+```typescript
+@Injectable()
+export class ServiceA {
+  constructor(private serviceB: ServiceB) {}
+}
+
+@Injectable()
+export class ServiceB {
+  constructor(private serviceA: ServiceA) {}
+  // ⚠️ 检测到循环依赖: ServiceA -> ServiceB -> ServiceA
+  // 建议使用 forwardRef() 来解决循环依赖问题
+}
+```
+
+> 📖 **详细文档**: 查看 [增强的依赖注入容器](./enhanced-di-container.md) 了解完整的功能和用法。
 
 ## 拦截器 (Interceptors)
 

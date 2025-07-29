@@ -52,6 +52,212 @@ export class UsersService {
 }
 ```
 
+### 高级依赖注入装饰器
+
+#### @Scope
+
+指定服务的生命周期作用域：
+
+```typescript
+import { Scope, DependencyScope, Injectable } from '@rapidojs/core';
+
+// 单例作用域（默认）
+@Scope(DependencyScope.SINGLETON)
+@Injectable()
+export class DatabaseService {
+  // 整个应用生命周期内只有一个实例
+}
+
+// 瞬态作用域
+@Scope(DependencyScope.TRANSIENT)
+@Injectable()
+export class LoggerService {
+  // 每次注入都创建新实例
+}
+
+// 请求级作用域
+@Scope(DependencyScope.REQUEST)
+@Injectable()
+export class RequestContextService {
+  // 每个 HTTP 请求内共享同一个实例
+}
+```
+
+#### 作用域装饰器语法糖
+
+```typescript
+import { Singleton, Transient, RequestScoped } from '@rapidojs/core';
+
+// 单例作用域装饰器
+@Singleton()
+@Injectable()
+export class CacheService {}
+
+// 瞬态作用域装饰器
+@Transient()
+@Injectable()
+export class UtilityService {}
+
+// 请求级作用域装饰器
+@RequestScoped()
+@Injectable()
+export class UserContextService {}
+```
+
+#### @ConditionalOn
+
+条件注入装饰器，只有当指定条件满足时才会注册服务：
+
+```typescript
+import { ConditionalOn, Injectable } from '@rapidojs/core';
+
+// 只在生产环境注册
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Injectable()
+export class ProductionService {
+  // 生产环境专用服务
+}
+
+// 根据配置注册
+@ConditionalOn({ config: 'feature.redis', value: 'true' })
+@Injectable()
+export class RedisService {
+  // 当 FEATURE_REDIS=true 时注册
+}
+
+// 自定义条件
+@ConditionalOn({ condition: () => process.platform === 'darwin' })
+@Injectable()
+export class MacOSService {
+  // 只在 macOS 系统注册
+}
+
+// 多条件组合
+@ConditionalOn({ 
+  env: 'NODE_ENV', 
+  value: 'production',
+  condition: () => process.env.ENABLE_CACHE === 'true'
+})
+@Injectable()
+export class ProductionCacheService {}
+```
+
+#### @Lazy
+
+懒加载装饰器，标记依赖为懒加载：
+
+```typescript
+import { Injectable, Lazy, Inject } from '@rapidojs/core';
+
+@Injectable()
+export class HeavyService {
+  constructor() {
+    console.log('HeavyService 实例化');
+    // 执行耗时的初始化操作
+  }
+  
+  process() {
+    return 'Heavy processing done';
+  }
+}
+
+@Injectable()
+export class MyService {
+  constructor(
+    @Lazy() private heavyService: HeavyService
+  ) {
+    console.log('MyService 实例化');
+    // HeavyService 此时还未实例化
+  }
+
+  async doSomething() {
+    // HeavyService 只有在这里第一次被访问时才会实例化
+    return await this.heavyService.process();
+  }
+}
+```
+
+### @Scope
+
+指定服务的生命周期作用域：
+
+```typescript
+import { Injectable, Scope, DependencyScope } from '@rapidojs/core';
+
+// 单例作用域（默认）
+@Scope(DependencyScope.SINGLETON)
+@Injectable()
+export class DatabaseService {
+  // 整个应用生命周期内只有一个实例
+}
+
+// 瞬态作用域
+@Scope(DependencyScope.TRANSIENT)
+@Injectable()
+export class LoggerService {
+  // 每次注入都创建新实例
+}
+
+// 请求级作用域
+@Scope(DependencyScope.REQUEST)
+@Injectable()
+export class UserContextService {
+  // 每个 HTTP 请求内共享同一个实例
+}
+```
+
+### @Singleton, @Transient, @RequestScoped
+
+作用域装饰器的语法糖形式：
+
+```typescript
+import { Injectable, Singleton, Transient, RequestScoped } from '@rapidojs/core';
+
+// 单例作用域（语法糖）
+@Singleton()
+@Injectable()
+export class CacheService {}
+
+// 瞬态作用域（语法糖）
+@Transient()
+@Injectable()
+export class UtilityService {}
+
+// 请求级作用域（语法糖）
+@RequestScoped()
+@Injectable()
+export class RequestContextService {}
+```
+
+### @ConditionalOn
+
+条件注入装饰器，只有当指定条件满足时才会注册该服务：
+
+```typescript
+import { Injectable, ConditionalOn } from '@rapidojs/core';
+
+// 只在生产环境注册
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Injectable()
+export class ProductionService {
+  // 只在生产环境可用
+}
+
+// 根据配置注册
+@ConditionalOn({ config: 'feature.redis', value: 'true' })
+@Injectable()
+export class RedisService {
+  // 只在 Redis 功能启用时可用
+}
+
+// 自定义条件
+@ConditionalOn({ condition: () => process.platform === 'darwin' })
+@Injectable()
+export class MacOSService {
+  // 只在 macOS 上可用
+}
+```
+
 ## 方法装饰器
 
 ### HTTP 方法装饰器
@@ -188,6 +394,28 @@ create(@Body user: CreateUserDto) {
 @Post()
 create(@Body('name') name: string) {
   return { name };
+}
+```
+
+### @Lazy
+
+懒加载装饰器，标记一个依赖为懒加载，只有在第一次访问时才会实例化：
+
+```typescript
+import { Injectable, Lazy, Inject } from '@rapidojs/core';
+
+@Injectable()
+export class MyService {
+  constructor(
+    @Inject() @Lazy() private heavyService: HeavyComputationService
+  ) {
+    // HeavyComputationService 只有在第一次被访问时才会实例化
+  }
+
+  async doSomething() {
+    // 服务在这里第一次被访问时才会实例化
+    return await this.heavyService.process();
+  }
 }
 ```
 

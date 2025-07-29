@@ -153,6 +153,96 @@ export class DatabaseModule {
 export class AppModule {}
 ```
 
+## 内置模块
+
+### Redis 缓存模块
+
+Rapido.js 提供了内置的 Redis 缓存模块，支持单连接和多连接配置：
+
+```typescript
+import { Module } from '@rapidojs/core';
+import { RedisModule } from '@rapidojs/redis';
+
+// 单连接配置
+@Module({
+  imports: [
+    RedisModule.forRoot({
+      host: 'localhost',
+      port: 6379,
+      password: 'your-password',
+      db: 0,
+    }),
+  ],
+})
+export class AppModule {}
+
+// 多连接配置
+@Module({
+  imports: [
+    RedisModule.forRoot([
+      {
+        name: 'cache',
+        host: 'localhost',
+        port: 6379,
+        db: 0,
+      },
+      {
+        name: 'session',
+        host: 'localhost',
+        port: 6379,
+        db: 1,
+      },
+    ]),
+  ],
+})
+export class AppModule {}
+
+// 异步配置
+@Module({
+  imports: [
+    RedisModule.forRootAsync({
+      useFactory: async () => ({
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD,
+      }),
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+在服务中使用 Redis：
+
+```typescript
+import { Injectable } from '@rapidojs/common';
+import { RedisCacheService, InjectRedis } from '@rapidojs/redis';
+import type { Redis } from 'ioredis';
+
+@Injectable()
+export class UserService {
+  constructor(
+    private readonly cacheService: RedisCacheService,
+    @InjectRedis() private readonly redis: Redis,
+    @InjectRedis('session') private readonly sessionRedis: Redis,
+  ) {}
+
+  async getUser(id: string) {
+    // 使用缓存服务
+    const cached = await this.cacheService.get(`user:${id}`);
+    if (cached) return cached;
+
+    // 使用原生 Redis 客户端
+    const user = await this.fetchFromDatabase(id);
+    await this.redis.setex(`user:${id}`, 3600, JSON.stringify(user));
+    
+    return user;
+  }
+}
+```
+
+详细使用方法请参考 [Redis 模块文档](./redis.md)。
+
 ## 模块重新导出
 
 重新导出其他模块的功能：

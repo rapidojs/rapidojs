@@ -417,6 +417,89 @@ export class AppModule {}
 // GET /health/liveness - Kubernetes 存活探针
 ```
 
+### Redis 缓存模块
+
+```typescript
+import { RedisModule, RedisService, RedisCacheService, InjectRedis } from '@rapidojs/redis';
+import type { Redis } from 'ioredis';
+
+// 单连接配置
+@Module({
+  imports: [
+    RedisModule.forRoot({
+      connection: {
+        host: 'localhost',
+        port: 6379,
+        password: 'your-password',
+        db: 0,
+      },
+    }),
+  ],
+})
+export class AppModule {}
+
+// 多连接配置
+@Module({
+  imports: [
+    RedisModule.forRoot({
+      connections: [
+        {
+          name: 'default',
+          host: 'localhost',
+          port: 6379,
+          isDefault: true,
+        },
+        {
+          name: 'cache',
+          host: 'localhost',
+          port: 6380,
+        },
+      ],
+    }),
+  ],
+})
+export class AppModule {}
+
+// 在服务中使用 Redis
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRedis() private readonly redis: Redis,
+    @InjectRedis('cache') private readonly cacheRedis: Redis,
+    private readonly cacheService: RedisCacheService
+  ) {}
+
+  async getUser(id: string) {
+    // 先尝试从缓存获取
+    const cached = await this.cacheService.get(`user:${id}`);
+    if (cached) {
+      return cached;
+    }
+
+    // 从数据库获取
+    const user = await this.fetchUserFromDB(id);
+    
+    // 缓存 1 小时
+    await this.cacheService.set(`user:${id}`, user, 3600);
+    
+    return user;
+  }
+
+  async updateUserCache(id: string, user: any) {
+    // 更新缓存
+    await this.cacheService.set(`user:${id}`, user, 3600);
+    
+    // 使用原生 Redis 客户端进行复杂操作
+    await this.redis.zadd('user:scores', Date.now(), id);
+  }
+
+  private async fetchUserFromDB(id: string) {
+    // 数据库逻辑
+    return { id, name: '张三', email: 'zhangsan@example.com' };
+  }
+}
+```
+
 ## 📊 性能表现
 
 | 框架 | 每秒请求数 (RPS) | 延迟 (ms) | 内存使用 (MB) |
@@ -483,6 +566,7 @@ rapidojs/
 │   ├── core/                   # @rapidojs/core
 │   ├── config/                 # @rapidojs/config
 │   ├── auth/                   # @rapidojs/auth
+│   ├── redis/                  # @rapidojs/redis
 │   └── cli/                    # @rapidojs/cli
 ├── apps/                       # 示例应用
 │   ├── example-api/           # API 示例
@@ -517,14 +601,19 @@ rapidojs/
 - [x] CLI 功能增强 (`add`, `g <schematic>`)
 - [ ] 完整文档站点
 
-### 🎯 未来计划 (v1.2.0 "数据引擎")
+### 🔄 开发中 (v1.2.0 "数据引擎")
 
-- [ ] 数据库集成 `@rapidojs/typeorm`
-- [ ] 缓存模块 `@rapidojs/redis`
+- [x] 缓存模块 `@rapidojs/redis`
+- [x] 数据库集成 `@rapidojs/typeorm`
 - [ ] 官方示例项目
+
+### 🎯 未来计划 (v1.3.0)
+
 - [ ] WebSocket 支持
 - [ ] GraphQL 集成
 - [ ] 微服务支持
+- [ ] 消息队列集成
+- [ ] 分布式追踪
 
 ## 📚 文档
 
