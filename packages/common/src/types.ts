@@ -29,6 +29,8 @@ export enum ParamType {
   REQUEST = 'request',
   RESPONSE = 'response',
   CUSTOM = 'custom',
+  UPLOADED_FILE = 'uploaded_file',
+  UPLOADED_FILES = 'uploaded_files',
 }
 
 /**
@@ -128,4 +130,4 @@ export type Provider = Type<any> | {
  */
 export interface DynamicModule extends ModuleMetadata {
   module: Type<any>;
-} 
+}

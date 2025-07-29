@@ -141,11 +141,25 @@ bootstrap();
 ```typescript
 import { Module } from '@rapidojs/core';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { 
+  AppService, 
+  LoggerService, 
+  RequestContextService,
+  ProductionAnalyticsService,
+  DevAnalyticsService,
+  AnalyticsService 
+} from './app.service';
 
 @Module({
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,                    // 单例服务
+    LoggerService,                 // 瞬态服务
+    RequestContextService,         // 请求级服务
+    AnalyticsService,              // 懒加载服务
+    ProductionAnalyticsService,    // 条件注入（生产环境）
+    DevAnalyticsService,           // 条件注入（开发环境）
+  ],
 })
 export class AppModule {}
 ```
@@ -157,29 +171,48 @@ export class AppModule {}
 ```typescript
 import { Controller, Get, Post, Body, Param, Query } from '@rapidojs/core';
 import { ParseIntPipe } from '@rapidojs/core';
-import { AppService } from './app.service';
+import { AppService, LoggerService, RequestContextService } from './app.service';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller('/api')
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly loggerService: LoggerService,        // 瞬态服务
+    private readonly requestContext: RequestContextService // 请求级服务
+  ) {}
 
   @Get('/hello')
   getHello(): string {
+    this.loggerService.log('Hello endpoint called');
     return this.appService.getHello();
   }
 
   @Get('/users/:id')
-  getUser(
+  async getUser(
     @Param('id', ParseIntPipe) id: number,
     @Query('include') include?: string
   ) {
-    return this.appService.getUser(id, include);
+    const requestId = this.requestContext.getRequestId();
+    this.loggerService.log(`Getting user ${id} for request ${requestId}`);
+    
+    return await this.appService.getUser(id, include);
   }
 
   @Post('/users')
-  createUser(@Body user: CreateUserDto) {
-    return this.appService.createUser(user);
+  async createUser(@Body() user: CreateUserDto) {
+    const requestId = this.requestContext.getRequestId();
+    this.loggerService.log(`Creating user for request ${requestId}`);
+    
+    return await this.appService.createUser(user);
+  }
+
+  @Get('/request-info')
+  getRequestInfo() {
+    return {
+      requestId: this.requestContext.getRequestId(),
+      timestamp: new Date().toISOString()
+    };
   }
 }
 ```
@@ -189,32 +222,185 @@ export class AppController {
 创建 `src/app.service.ts`：
 
 ```typescript
-import { Injectable } from '@rapidojs/core';
+import { Injectable, Singleton, Transient, RequestScoped, ConditionalOn, Lazy } from '@rapidojs/core';
 import { CreateUserDto } from './dto/create-user.dto';
 
+// 单例服务 - 整个应用只有一个实例
+@Singleton()
 @Injectable()
 export class AppService {
+  private users: any[] = [];
+  
+  constructor(
+    @Lazy() private analyticsService: AnalyticsService // 懒加载重型服务
+  ) {}
+  
   getHello(): string {
     return 'Hello, Rapido.js!';
   }
-
-  getUser(id: number, include?: string) {
-    return {
-      id,
-      name: `User ${id}`,
-      email: `user${id}@example.com`,
-      ...(include && { include })
-    };
+  
+  async getUser(id: number, include?: string) {
+    const user = this.users.find(u => u.id === id);
+    
+    // 只有在需要时才实例化 analyticsService
+    if (user) {
+      await this.analyticsService.track('user_viewed', { userId: id });
+    }
+    
+    return user;
   }
-
-  createUser(user: CreateUserDto) {
-    return {
-      id: Math.floor(Math.random() * 1000),
-      ...user,
-      createdAt: new Date().toISOString()
+  
+  async createUser(userData: CreateUserDto) {
+    const user = {
+      id: this.users.length + 1,
+      ...userData,
+      createdAt: new Date()
     };
+    
+    this.users.push(user);
+    
+    // 懒加载的服务只在首次访问时实例化
+    await this.analyticsService.track('user_created', { userId: user.id });
+    
+    return user;
   }
 }
+
+// 瞬态服务 - 每次注入都创建新实例
+@Transient()
+@Injectable()
+export class LoggerService {
+  private timestamp = Date.now();
+  
+  log(message: string) {
+    console.log(`[${this.timestamp}] ${message}`);
+  }
+}
+
+// 请求级服务 - 每个 HTTP 请求内共享同一个实例
+@RequestScoped()
+@Injectable()
+export class RequestContextService {
+  private requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  getRequestId(): string {
+    return this.requestId;
+  }
+}
+
+// 条件注入 - 只在生产环境注册
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Injectable()
+export class ProductionAnalyticsService {
+  async track(event: string, data: any) {
+    // 发送到真实的分析服务
+    console.log('Production analytics:', event, data);
+  }
+}
+
+// 条件注入 - 只在开发环境注册
+@ConditionalOn({ env: 'NODE_ENV', value: 'development' })
+@Injectable()
+export class DevAnalyticsService {
+  async track(event: string, data: any) {
+    // 开发环境的模拟分析
+    console.log('Dev analytics:', event, data);
+  }
+}
+
+// 重型服务 - 适合懒加载
+@Injectable()
+export class AnalyticsService {
+  constructor() {
+    console.log('AnalyticsService 初始化 - 这是一个重型操作');
+    // 模拟重型初始化
+  }
+  
+  async track(event: string, data: any) {
+    console.log(`Analytics: ${event}`, data);
+  }
+}
+```
+
+#### 使用高级装饰器
+
+你也可以创建更复杂的服务，使用 Rapido.js 的高级装饰器：
+
+```typescript
+// src/services/cache.service.ts
+import { Injectable, Singleton, ConditionalOn } from '@rapidojs/core';
+
+@ConditionalOn({ env: 'NODE_ENV', value: 'production' })
+@Singleton()
+@Injectable()
+export class CacheService {
+  private cache = new Map<string, any>();
+
+  get(key: string): any {
+    return this.cache.get(key);
+  }
+
+  set(key: string, value: any): void {
+    this.cache.set(key, value);
+  }
+}
+
+// src/services/logger.service.ts
+import { Injectable, Transient } from '@rapidojs/core';
+
+@Transient() // 每次注入都创建新实例
+@Injectable()
+export class LoggerService {
+  private context: string;
+
+  constructor() {
+    this.context = `Logger-${Date.now()}`;
+  }
+
+  log(message: string): void {
+    console.log(`[${this.context}] ${message}`);
+  }
+}
+
+// src/services/user-context.service.ts
+import { Injectable, RequestScoped } from '@rapidojs/core';
+
+@RequestScoped() // 每个 HTTP 请求内共享同一个实例
+@Injectable()
+export class UserContextService {
+  private userId?: number;
+
+  setUserId(id: number): void {
+    this.userId = id;
+  }
+
+  getUserId(): number | undefined {
+    return this.userId;
+  }
+}
+```
+
+然后在你的模块中注册这些服务：
+
+```typescript
+// src/app.module.ts
+import { Module } from '@rapidojs/core';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { CacheService } from './services/cache.service';
+import { LoggerService } from './services/logger.service';
+import { UserContextService } from './services/user-context.service';
+
+@Module({
+  controllers: [AppController],
+  providers: [
+    AppService,
+    CacheService,      // 只在生产环境注册
+    LoggerService,     // 瞬态服务
+    UserContextService // 请求级服务
+  ],
+})
+export class AppModule {}
 ```
 
 ### 5. 创建 DTO

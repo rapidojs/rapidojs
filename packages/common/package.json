@@ -1,6 +1,6 @@
 {
   "name": "@rapidojs/common",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "Common utilities for Rapido.js framework",
   "license": "MIT",
   "repository": {
@@ -27,7 +27,7 @@
     "build": "pnpm run clean && pnpm run build:swc && pnpm run build:types",
     "build:with-deps": "cd ../.. && turbo run build --filter=@rapidojs/common",
     "dev": "pnpm run build:swc --watch",
-    "test": "echo \"No tests yet\"",
+    "test": "vitest run",
     "lint": "eslint ."
   },
   "keywords": [
@@ -44,7 +44,9 @@
     "split2": "^4.2.0"
   },
   "devDependencies": {
-    "@types/reflect-metadata": "*"
+    "@types/reflect-metadata": "*",
+    "vitest": "^1.0.0",
+    "@types/node": "^20.0.0"
   },
   "peerDependencies": {
     "pino": "^8.0.0",

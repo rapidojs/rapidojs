@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { Type } from '../types.js';
 import { ExceptionFilter } from './exception-filter.interface.js';
 import { PipeTransform } from '../pipes/pipe-transform.interface.js';
-import { CanActivate, ExecutionContext, Interceptor } from '@rapidojs/common';
+import { CanActivate, ExecutionContext, Interceptor, MultipartOptions } from '@rapidojs/common';
 import { DIContainer } from '../di/container.js';
 import { StaticFileConfig } from './app-config.interface.js';
 
@@ -32,6 +32,21 @@ export interface RapidoApp extends FastifyInstance {
    * @param config - Static file configuration
    */
   addStaticFiles(config: StaticFileConfig): Promise<void>;
+
+  /**
+   * Enable multipart form data support for file uploads
+   * @param options - Multipart configuration options
+   * @returns Promise that resolves when the plugin is registered
+   * 
+   * @example
+   * ```typescript
+   * await app.enableMultipart({
+   *   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+   *   allowedMimeTypes: ['image/jpeg', 'image/png']
+   * });
+   * ```
+   */
+  enableMultipart(options?: MultipartOptions): Promise<void>;
 
   /**
    * Registers exception filters as global filters (will be used within

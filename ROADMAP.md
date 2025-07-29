@@ -22,7 +22,12 @@ v1.1.0 版本已成功发布，为框架奠定了坚实的基础，使其成为�
 
 #### **已完成的核心能力:**
 
-* **核心引擎 (`@rapidojs/core`)**: 实现了基于装饰器的路由、以 `tsyringe` 为核心的依赖注入、模块化系统 (`@Module`) 以及 `RapidoFactory` 核心启动器。
+* **增强核心引擎 (`@rapidojs/core`)**: 实现了基于装饰器的路由、增强的依赖注入容器、模块化系统 (`@Module`) 以及 `RapidoFactory` 核心启动器。
+  - **✅ 增强 DI 容器**: 支持循环依赖检测、懒加载、作用域管理 (Singleton/Transient/Request)
+  - **✅ 高级装饰器**: `@ConditionalOn`、`@Lazy`、`@Scope`、`@RequestScoped`、`@Transient`、`@Singleton`
+  - **✅ 智能依赖管理**: 自动检测并警告循环依赖，支持条件注入和懒加载
+  - **✅ 请求级作用域**: 支持请求级别的依赖注入作用域管理
+  - **✅ 条件注入**: 基于环境变量、配置或自定义条件的服务注册
 * **请求管道 (`Pipeline`)**: 提供了完整的请求参数处理和数据验证流程，包括参数装饰器 (`@Body`, `@Query` 等)和强大的管道机制 (`PipeTransform`, `@UsePipes`, 参数级管道)。
 * **韧性与健壮性 (`Resilience`)**: 内置了全局异常过滤器 (`@Catch`) 和基础的 `HttpException` 类，并提供了企业级的配置管理模块 (`@rapidojs/config`)，支持多源加载和启动时校验。
 * **开发者体验 (`Developer Experience`)**: 推出了 `@rapidojs/cli` 命令行工具，支持通过 `rapido new` 命令一键生成项目骨架，并提供 `rapido add` 命令快速添加模块，以及 `rapido g` 命令生成控制器、服务、守卫、拦截器等代码文件。
@@ -76,12 +81,18 @@ v1.1.0 版本已成功发布，为框架奠定了坚实的基础，使其成为�
     * 辅助装饰器：`@NoTransform()`，用于在全局拦截器下跳过特定路由的响应转换。
     * 生命周期接口：`OnApplicationBootstrap`, `BeforeApplicationShutdown` 等。
     * 一个内置的、可配置的 `/health` 健康检查端点。
+    * 文件上传支持: 提供 `@UseMultiPart()`、`@UploadedFile()` 和 `@UploadedFiles()` 装饰器，简化文件上传处理。
 * **关键实现路径**:
     * [x] **实现拦截器逻辑**: 修改核心注册器的包裹处理函数，将其改造为支持 `next()` 模式的调用链。
     * [x] **实现内置拦截器**: 创建 `TransformInterceptor` 和 `LoggingInterceptor` 作为通用工具。
     * [x] **实现 @NoTransform() 装饰器**: 为 `TransformInterceptor` 增加元数据检查逻辑，使其可以被 `@NoTransform()` 豁免。
     * [x] **实现生命周期钩子**: 在 `RapidoFactory` 的启动和关闭流程中，增加对生命周期钩子的扫描和执行。
     * [x] **实现健康检查**: 在核心中增加可配置的健康检查模块。
+    * [x] 集成 `Multipart` 插件:
+        [x] 创建 `@UseMultiPart()` 装饰器: 这是一个方法装饰器，用于在特定路由上启用 `multipart/form-data` 解析。它内部会为该路由动态注册 `@fastify/multipart` 插件。可以接收插件选项作为参数。
+        [x] 创建 `@UploadedFile()` 参数装饰器: 用于在控制器方法中直接注入单个上传的文件对象 (`MultipartFile`)。
+        [x] 创建 `@UploadedFiles()` 参数装饰器: 用于注入一个包含所有上传文件的数组 (`MultipartFile[]`)。
+        [x] 定义 `MultipartFile` 接口: 在 `@rapidojs/common` 中定义一个标准化的文件对象接口，屏蔽底层实现的差异。
 
 ##### **3. `@rapidojs/schedule` - 任务调度模块**
 
@@ -124,7 +135,10 @@ v1.1.0 版本已成功交付“武库”(The Arsenal)，为框架配备了一套
 
 #### **已完成的核心能力:**
 
-* **核心引擎 (`@rapidojs/core`)**: 实现了基于装饰器的路由、依赖注入、模块化系统。
+* **增强核心引擎 (`@rapidojs/core`)**: 实现了基于装饰器的路由、增强的依赖注入容器、模块化系统。
+  - **增强 DI 容器**: 支持循环依赖检测、懒加载、作用域管理 (Singleton/Transient/Request)
+  - **高级装饰器**: `@ConditionalOn`、`@Lazy`、`@Scope`、`@RequestScoped`、`@Transient`、`@Singleton`
+  - **智能依赖管理**: 自动检测并警告循环依赖，支持条件注入和懒加载
 * **请求管道 (`Pipeline`)**: 提供了强大的请求参数处理和数据验证流程。
 * **韧性与健壮性 (`Resilience`)**: 内置了全局异常过滤器和企业级的配置管理模块。
 * **开发者体验 (`Developer Experience`)**: 推出了 `@rapidojs/cli` 命令行工具。
@@ -163,11 +177,11 @@ v1.1.0 版本已成功交付“武库”(The Arsenal)，为框架配备了一套
     * 辅助注入装饰器：`@InjectRepository(Entity)`。
     * 事务处理装饰器：`@Transactional()`，简化数据库事务操作。
 * **关键实现路径**:
-    * [ ] **实现 `TypeOrmModule`**: 实现 `forRoot` 和 `forFeature` 等静态方法，核心是动态创建和注册 `DataSource` 和 `Repository` 的 Provider。
-    * [ ] **实现 `@InjectRepository()`**: 创建参数装饰器，以生成特定的注入令牌。
-    * [ ] **实现事务装饰器**: 研究并实现基于 `AsyncLocalStorage` 或请求作用域 Provider 的 `@Transactional()` 装饰器，自动管理事务的开启、提交与回滚。
-    * [ ] **集成生命周期钩子**: 利用 `OnApplicationBootstrap` 和 `BeforeApplicationShutdown` 来管理数据库连接的生命周期。
-    * [ ] **编写测试**: 覆盖所有模块配置方式和注入能力。
+    * [x] **实现 `TypeOrmModule`**: 实现 `forRoot` 和 `forFeature` 等静态方法，核心是动态创建和注册 `DataSource` 和 `Repository` 的 Provider。
+    * [x] **实现 `@InjectRepository()`**: 创建参数装饰器，以生成特定的注入令牌。
+    * [x] **实现事务装饰器**: 研究并实现基于 `AsyncLocalStorage` 或请求作用域 Provider 的 `@Transactional()` 装饰器，自动管理事务的开启、提交与回滚。
+    * [x] **集成生命周期钩子**: 利用 `OnApplicationBootstrap` 和 `BeforeApplicationShutdown` 来管理数据库连接的生命周期。
+    * [x] **编写测试**: 覆盖所有模块配置方式和注入能力。
 
 ##### **2. `@rapidojs/redis` - Redis 集成模块**
 
@@ -177,12 +191,14 @@ v1.1.0 版本已成功交付“武库”(The Arsenal)，为框架配备了一套
     * 模块配置方法：`RedisModule.forRoot()` 和 `RedisModule.forRootAsync()`。
     * 辅助注入装饰器：`@InjectRedis()`。
     * 支持多客户端注入与管理。
+    * 缓存服务：`RedisCacheService`，提供高级缓存操作。
+    * 工具类：`RedisUtils`，提供分布式锁、限流器等实用功能。
 * **关键实现路径**:
-    * [ ] **技术选型**: 选择并集成 `ioredis` 库。
-    * [ ] **支持多客户端**: 重构 `RedisModule`，允许通过 `name` 属性来注册和注入多个不同的 Redis 客户端实例（例如 `@InjectRedis('cache')`, `@InjectRedis('session')`）。
-    * [ ] **实现 `RedisModule`**: 实现模块的静态配置方法，创建并注册 Redis 客户端 Provider。
-    * [ ] **集成生命周期钩子**: 确保 Redis 连接在应用关闭时被优雅地断开。
-    * [ ] **编写测试**: 确保 Redis 客户端能够被成功配置和注入。
+    * [x] **技术选型**: 选择并集成 `ioredis` 库。
+    * [x] **支持多客户端**: 重构 `RedisModule`，允许通过 `name` 属性来注册和注入多个不同的 Redis 客户端实例（例如 `@InjectRedis('cache')`, `@InjectRedis('session')`）。
+    * [x] **实现 `RedisModule`**: 实现模块的静态配置方法，创建并注册 Redis 客户端 Provider。
+    * [x] **集成生命周期钩子**: 确保 Redis 连接在应用关闭时被优雅地断开。
+    * [x] **编写测试**: 确保 Redis 客户端能够被成功配置和注入。
 
 ##### **3. 官方示例项目 (Official Example Projects)**
 

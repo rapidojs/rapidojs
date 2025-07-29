@@ -12,6 +12,7 @@ import { ConfigService } from '@rapidojs/config';
 import { ExceptionsModule } from './modules/exceptions/exceptions.module.js';
 import { ConfigDemoModule } from './modules/config/config.module.js';
 import { LifecycleTestModule } from './modules/lifecycle/lifecycle-test.module.js';
+import { UploadModule } from './upload/upload.module.js';
 
 /**
  * 配置验证函数
@@ -53,6 +54,7 @@ function validateConfig(config: Record<string, any>): void {
     ExceptionsModule,
     ConfigDemoModule, // 配置演示模块
     LifecycleTestModule,
+    UploadModule, // 文件上传模块
   ],
   controllers: [AppController],
   providers: [],

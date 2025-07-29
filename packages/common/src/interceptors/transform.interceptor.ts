@@ -64,9 +64,11 @@ export interface StandardResponse<T = any> {
 export class TransformInterceptor implements Interceptor {
   async intercept(context: ExecutionContext, next: CallHandler): Promise<any> {
     const handler = context.getHandler();
+    const controllerClass = context.getClass();
     
     // Check if the route is marked with @NoTransform()
-    if (handler && Reflect.getMetadata(NO_TRANSFORM_METADATA, handler)) {
+    // The metadata is stored on the controller prototype with the method name as key
+    if (handler && controllerClass && Reflect.getMetadata(NO_TRANSFORM_METADATA, controllerClass.prototype, handler.name)) {
       return next.handle();
     }
     

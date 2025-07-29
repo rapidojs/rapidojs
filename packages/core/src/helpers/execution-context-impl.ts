@@ -9,6 +9,14 @@ export class HttpExecutionContextImpl implements ExecutionContext, HttpArguments
     private readonly handler?: Function | null
   ) {}
 
+  /**
+   * 获取执行上下文的类型
+   * @returns 上下文类型，对于HTTP请求返回'http'
+   */
+  getType(): string {
+    return 'http';
+  }
+
   getClass<T>(): T | null {
     return (this.controllerClass as T) || null;
   }
@@ -28,4 +36,4 @@ export class HttpExecutionContextImpl implements ExecutionContext, HttpArguments
   getResponse<T>(): T {
     return this.reply as T;
   }
-} 
+}

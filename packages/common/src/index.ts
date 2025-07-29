@@ -13,6 +13,7 @@ export * from './decorators/route.decorators.js';
 export * from './decorators/user.decorator.js';
 export * from './decorators/auth.decorators.js';
 export * from './decorators/interceptor.decorators.js';
+export * from './decorators/multipart.decorators.js';
 
 // Enums
 export * from './enums.js';
@@ -35,6 +36,11 @@ export type {
   OnModuleInit,
   OnModuleDestroy
 } from './interfaces.js';
+
+// Multipart interfaces
+export type { MultipartFile, MultipartOptions } from './multipart.interfaces.js';
+
+
 
 // Built-in Pipes
 export {

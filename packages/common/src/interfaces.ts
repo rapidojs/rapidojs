@@ -85,6 +85,11 @@ export interface ExecutionContext extends ArgumentsHost {
    * Returns a reference to the handler (method) that will be executed.
    */
   getHandler(): Function | null;
+
+  /**
+   * Returns the type of the execution context (e.g., 'http', 'ws', 'rpc').
+   */
+  getType(): string;
 }
 
 /**

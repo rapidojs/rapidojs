@@ -18,7 +18,9 @@ export const METADATA_KEY = {
   PIPES: Symbol.for('rapido:pipes'),
   PARAM_PIPES: Symbol.for('rapido:param_pipes'),
   GUARDS: Symbol.for('rapido:guards'),
-  INTERCEPTORS: Symbol.for('rapido:interceptors')
+  INTERCEPTORS: Symbol.for('rapido:interceptors'),
+  MULTIPART: Symbol.for('rapido:multipart'),
+  MULTIPART_OPTIONS: Symbol.for('rapido:multipart:options')
 };
 
 export const MODULE_METADATA = 'module:metadata';
